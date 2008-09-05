@@ -114,7 +114,7 @@ instance Enum WindowMode where
   fromEnum FullScreen = 0x00010002
   toEnum 0x00010001 = Window
   toEnum 0x00010002 = FullScreen
-  toEnum _ = error "toEnum out of bound"
+  toEnum _ = error "GLFW: WindowMode toEnum out of bound"
 
 -- | Window hints, used in settable variable 'openWindowHint'.
 data WindowHint
@@ -148,7 +148,7 @@ instance Enum WindowHint where
   toEnum 0x00020011 = Stereo
   toEnum 0x00020012 = NoResize
   toEnum 0x00020013 = FSAASamples
-  toEnum _ = error "toEnum out of bound"
+  toEnum _ = error "GLFW: WIndowHint toEnum out of bound"
 
 -- | Window parameters used in gettable variable 'windowParam'.
 data WindowParam
@@ -185,7 +185,7 @@ instance Enum WindowParam where
   toEnum 0x00020008 = AlphaBits
   toEnum 0x00020009 = DepthBits
   toEnum 0x0002000A = StencilBits
-  toEnum _ = error "toEnum out of bound"
+  toEnum _ = error "GLFW: WIndowParam toEnum out of bound"
   
 -- | Video modes used in gettable variables 'videoModes' and 'desktopMode'.
 data VideoMode = VideoMode
@@ -481,7 +481,7 @@ instance Enum SpecialFeature where
   toEnum 0x00030004 = SystemKey
   toEnum 0x00030005 = KeyRepeat
   toEnum 0x00030006 = AutoPollEvent
-  toEnum _ = error "toEnum out of bound"
+  toEnum _ = error "GLFW: SpecialFeature toEnum out of bound"
 
 -- | Texture flag used in 'loadTexture2D' and 'loadMemoryTexture2D'.
 data TextureFlag
@@ -500,7 +500,7 @@ instance Enum TextureFlag where
   toEnum 0x00000002 = OriginUL
   toEnum 0x00000004 = BuildMipMaps
   toEnum 0x00000008 = AlphaMap
-  toEnum _ = error "toEnum out of bound"
+  toEnum _ = error "GLFW: TextureFlag toEnum out of bound"
 
 -- | Build-in bitmap font used in 'renderString'.
 data BitmapFont
@@ -882,7 +882,7 @@ enableSpecial :: SpecialFeature -> IO ()
 enableSpecial f = glfwEnable (fromEnum f)
 -- | Disable a 'SpecialFeature'.
 disableSpecial :: SpecialFeature -> IO ()
-disableSpecial f = glfwEnable (fromEnum f)
+disableSpecial f = glfwDisable (fromEnum f)
 
 -- Image/texture I/O
 --foreign import ccall "GL/glfw.h glfwReadImage" glfwReadImage :: Ptr CChar -> Ptr GLFWimage -> Int -> IO ()
@@ -996,7 +996,7 @@ loadFont name = do
           loadMemoryTexture2D bitmap [OriginUL, NoRescale]
           writeIORef fontTextures ((name, font):l)
           return font
-        [] -> error "Unable to load texture"
+        [] -> error "GLFW: loadFont Unable to load texture"
     
 renderChar font c = do
   let y = fromIntegral ((fromEnum c) `rem` 16 * 16) / 256
