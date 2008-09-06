@@ -521,7 +521,7 @@ type GLFWwindowsizefun = Int32 -> Int32 -> IO ()
 type GLFWwindowclosefun = IO ()
 type GLFWwindowrefreshfun = IO ()
 type GLFWmousebuttonfun = Int -> Int -> IO ()
-type GLFWmouseposfun = Int32 -> Int32 -> IO ()
+type GLFWmouseposfun = Int -> Int -> IO ()
 type GLFWmousewheelfun = Int -> IO ()
 type GLFWkeyfun = Int -> Int -> IO ()
 type GLFWcharfun = Int -> Int -> IO ()
@@ -831,8 +831,8 @@ mousePosCallback :: GL.SettableStateVar MousePosCallback
 mousePosCallback = GL.makeSettableStateVar setter
   where 
     setter f = do
-      let g x y = f $ GL.Position x y
-      ptr <- glfwWrapFun2' g
+      let g x y = f $ GL.Position (fromIntegral x) (fromIntegral y)
+      ptr <- glfwWrapFun2 g
       glfwSetCallbackIORef glfwMouseposfun ptr
       glfwSetMousePosCallback ptr
 
