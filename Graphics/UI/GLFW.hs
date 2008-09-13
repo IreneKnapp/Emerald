@@ -845,7 +845,16 @@ mouseWheelCallback :: GL.SettableStateVar MouseWheelCallback
 mouseWheelCallback  = GL.makeSettableStateVar setter
   where
     setter f = do
-      ptr <- glfwWrapFun1 f
+      -- this is a very dirty hack, but i (shahn) think,
+      -- it's necessary to work around a bug in ghc's FFI.
+      -- ghc bug report: http://hackage.haskell.org/trac/ghc/ticket/2594
+      let g x = do
+                    ptr <- malloc
+                    poke ptr x
+                    x32 <- (peek (castPtr ptr)) :: IO Int32
+                    free ptr
+                    f (fromIntegral x32)
+      ptr <- glfwWrapFun1 g
       glfwSetCallbackIORef glfwMousewheelfun ptr
       glfwSetMouseWheelCallback ptr
 
