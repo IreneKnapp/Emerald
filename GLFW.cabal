@@ -30,7 +30,6 @@ data-files:
 library
   build-depends:   base, OpenGL >= 2.1
   exposed-modules: Graphics.UI.GLFW
-  extensions:      CPP, ForeignFunctionInterface
   ghc-options:     -Wall -O2
 
   if os(linux)

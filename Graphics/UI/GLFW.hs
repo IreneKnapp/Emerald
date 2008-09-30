@@ -532,14 +532,14 @@ type GLFWcharfun          = Int -> Int -> IO ()
 initialize :: IO Bool
 initialize = glfwInit >>= return . toEnum
 --
-foreign import ccall "GL/glfw.h glfwInit" glfwInit :: IO Int
+foreign import ccall unsafe glfwInit :: IO Int
 
 -- | Terminate GLFW library after use. Before a program terminates, GLFW has to
 --   be terminated in order to free up resources, etc.
 terminate :: IO ()
 terminate = glfwTerminate >> glfwCleanup
 --
-foreign import ccall "GL/glfw.h glfwTerminate" glfwTerminate :: IO ()
+foreign import ccall unsafe glfwTerminate :: IO ()
 
 -- | Returns the GLFW C library version numbers.
 version :: GL.GettableStateVar Version
@@ -553,7 +553,7 @@ version = GL.makeGettableStateVar getter
       c <- peek rev
       return (a, b, c))))
 --
-foreign import ccall "GL/glfw.h glfwGetVersion" glfwGetVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
+foreign import ccall unsafe glfwGetVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
 
 -- | Open a window. Returns True if successful, False otherwise. GLFW
 --   applications can only open one window.
@@ -583,10 +583,10 @@ openWindow (GL.Size w h) bits mode = do
     filterBits _ [] = Nothing
     filterBits f (x:xs) = maybe (filterBits f xs) Just (f x)
 --
-foreign import ccall "GL/glfw.h glfwOpenWindow" glfwOpenWindow :: Int32 -> Int32 -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO Int
+foreign import ccall unsafe glfwOpenWindow :: Int32 -> Int32 -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO Int
 
 -- | Close the open window and destroy the associated OpenGL context.
-foreign import ccall "GL/glfw.h glfwCloseWindow" closeWindow :: IO ()
+foreign import ccall unsafe "glfwCloseWindow" closeWindow :: IO ()
 
 -- | Set the window hints, i.e., additional window properties, before
 --   openWindow.
@@ -594,14 +594,14 @@ openWindowHint :: GL.SettableStateVar (WindowHint, Int)
 openWindowHint = GL.makeSettableStateVar setter
   where setter (hint, val) = glfwOpenWindowHint (fromEnum hint) val
 --
-foreign import ccall "GL/glfw.h glfwOpenWindowHint" glfwOpenWindowHint :: Int -> Int -> IO ()
+foreign import ccall unsafe glfwOpenWindowHint :: Int -> Int -> IO ()
 
 -- | Set the title of the opened window.
 windowTitle :: GL.SettableStateVar String
 windowTitle = GL.makeSettableStateVar setter
   where setter = flip withCString glfwSetWindowTitle
 --
-foreign import ccall "GL/glfw.h glfwSetWindowTitle" glfwSetWindowTitle :: CString -> IO ()
+foreign import ccall unsafe glfwSetWindowTitle :: CString -> IO ()
 
 -- | Get or set the size of the opened window.
 windowSize :: GL.StateVar GL.Size
@@ -614,19 +614,19 @@ windowSize = GL.makeStateVar getter setter
       return $ GL.Size w' h'))
     setter (GL.Size w h) = glfwSetWindowSize w h
 --
-foreign import ccall "GL/glfw.h glfwGetWindowSize" glfwGetWindowSize :: Ptr Int32 -> Ptr Int32 -> IO ()
-foreign import ccall "GL/glfw.h glfwSetWindowSize" glfwSetWindowSize :: Int32 -> Int32 -> IO ()
+foreign import ccall unsafe glfwGetWindowSize :: Ptr Int32 -> Ptr Int32 -> IO ()
+foreign import ccall unsafe glfwSetWindowSize :: Int32 -> Int32 -> IO ()
 
 -- | Iconify the window.
-foreign import ccall "GL/glfw.h glfwIconifyWindow" iconifyWindow :: IO ()
+foreign import ccall unsafe "glfwIconifyWindow" iconifyWindow :: IO ()
 
 -- | Restore the window after iconification.
-foreign import ccall "GL/glfw.h glfwRestoreWindow" restoreWindow :: IO ()
+foreign import ccall unsafe "glfwRestoreWindow" restoreWindow :: IO ()
 
 -- | Swap the back and front color buffers of the window. If 'AutoPollEvent' is
 --   enabled by 'enableSpecial' (which is the default), it also polls for new
 --   events before the swapping.
-foreign import ccall "GL/glfw.h glfwSwapBuffers" swapBuffers :: IO ()
+foreign import ccall unsafe "glfwSwapBuffers" swapBuffers :: IO ()
 
 -- | Set the minimum number of monitor retraces between each each buffer swap
 --   performed by 'swapBuffers'. If set to zero, buffer swaps will not be
@@ -634,13 +634,13 @@ foreign import ccall "GL/glfw.h glfwSwapBuffers" swapBuffers :: IO ()
 swapInterval :: GL.SettableStateVar Int
 swapInterval = GL.makeSettableStateVar glfwSwapInterval
 --
-foreign import ccall "GL/glfw.h glfwSwapInterval" glfwSwapInterval :: Int -> IO ()
+foreign import ccall unsafe glfwSwapInterval :: Int -> IO ()
 
 -- | Get the value of window parameters.
 windowParam :: WindowParam -> GL.GettableStateVar Int
 windowParam p = GL.makeGettableStateVar (glfwGetWindowParam (fromEnum p))
 --
-foreign import ccall "GL/glfw.h glfwGetWindowParam" glfwGetWindowParam :: Int -> IO Int
+foreign import ccall unsafe glfwGetWindowParam :: Int -> IO Int
 
 -- | Callback type for 'windowSizeCallback'.
 type WindowSizeCallback = GL.Size -> IO ()
@@ -653,7 +653,7 @@ windowSizeCallback = GL.makeSettableStateVar (\f -> do
   glfwSetCallbackIORef glfwWindowsizefun ptr
   glfwSetWindowSizeCallback ptr)
 --
-foreign import ccall "GL/glfw.h glfwSetWindowSizeCallback" glfwSetWindowSizeCallback :: FunPtr GLFWwindowsizefun -> IO ()
+foreign import ccall unsafe glfwSetWindowSizeCallback :: FunPtr GLFWwindowsizefun -> IO ()
 
 -- | Callback type for 'windowCloseCallback'.
 type WindowCloseCallback = IO ()
@@ -665,7 +665,7 @@ windowCloseCallback = GL.makeSettableStateVar (\f -> do
   glfwSetCallbackIORef glfwWindowclosefun ptr
   glfwSetWindowCloseCallback ptr)
 --
-foreign import ccall "GL/glfw.h glfwSetWindowCloseCallback" glfwSetWindowCloseCallback :: FunPtr GLFWwindowclosefun -> IO ()
+foreign import ccall unsafe glfwSetWindowCloseCallback :: FunPtr GLFWwindowclosefun -> IO ()
 
 -- | Callback type for 'windowRefreshCallback'.
 type WindowRefreshCallback = IO ()
@@ -682,7 +682,7 @@ windowRefreshCallback = GL.makeSettableStateVar setter
       glfwSetCallbackIORef glfwWindowrefreshfun ptr
       glfwSetWindowRefreshCallback ptr
 --
-foreign import ccall "GL/glfw.h glfwSetWindowRefreshCallback" glfwSetWindowRefreshCallback :: FunPtr GLFWwindowrefreshfun -> IO ()
+foreign import ccall unsafe glfwSetWindowRefreshCallback :: FunPtr GLFWwindowrefreshfun -> IO ()
 
 -- | Get a list of deteced 'VideoMode's, the max number of which is limited to
 --   256 for now.
@@ -699,7 +699,7 @@ videoModes = GL.makeGettableStateVar getter
       rest <- filterMode a' (pred c)
       return $ VideoMode w h r b g : rest
 --
-foreign import ccall "GL/glfw.h glfwGetVideoModes" glfwGetVideoModes :: Ptr Int -> Int -> IO Int
+foreign import ccall unsafe glfwGetVideoModes :: Ptr Int -> Int -> IO Int
 
 sizeOfVideoMode :: Int
 sizeOfVideoMode = 5
@@ -716,33 +716,33 @@ desktopMode = GL.makeGettableStateVar getter
       [w, h, r, b, g] <- peekArray 5 arr
       return $ VideoMode w h r b g)
 --
-foreign import ccall "GL/glfw.h glfwGetDesktopMode" glfwGetDesktopMode :: Ptr Int -> IO ()
+foreign import ccall unsafe glfwGetDesktopMode :: Ptr Int -> IO ()
 
 -- | Poll events, such as user input and window events. Upon calling this
 --   function, all window states, keyboard states and mouse states are updated.
 --   If any related callback functions are registered, these are called during
 --   the call of 'pollEvents'.
-foreign import ccall "GL/glfw.h glfwPollEvents" pollEvents :: IO ()
+foreign import ccall unsafe "glfwPollEvents" pollEvents :: IO ()
 
 -- | Wait for events, such as user input and window events. The calling thread
 --   will be put to sleep until any event appears in the event queue.
 --   When events are ready, the events will be processed just as they are
 --   processed by 'pollEvents'.
-foreign import ccall "GL/glfw.h glfwWaitEvents" waitEvents :: IO ()
+foreign import ccall unsafe "glfwWaitEvents" waitEvents :: IO ()
 
 -- | Return a 'KeyButtonState', either 'Release' or 'Press', of the indicated
 --   key.
 getKey :: Enum a => a -> IO KeyButtonState
 getKey key = glfwGetKey (fromEnum key) >>= return . toEnum
 --
-foreign import ccall "GL/glfw.h glfwGetKey" glfwGetKey :: Int -> IO Int
+foreign import ccall unsafe glfwGetKey :: Int -> IO Int
 
 -- | Return a 'KeyButtonState', either 'Release' or 'Press', of the indicated
 --   mouse button.
 getMouseButton :: MouseButton -> IO KeyButtonState
 getMouseButton button = glfwGetMouseButton (fromEnum button) >>= return . toEnum
 --
-foreign import ccall "GL/glfw.h glfwGetMouseButton" glfwGetMouseButton :: Int -> IO Int
+foreign import ccall unsafe glfwGetMouseButton :: Int -> IO Int
 
 -- | Set or get the mouse position.
 mousePos :: GL.StateVar GL.Position
@@ -755,21 +755,21 @@ mousePos = GL.makeStateVar getter setter
       return $ GL.Position mx my))
     setter (GL.Position x y) = glfwSetMousePos x y
 --
-foreign import ccall "GL/glfw.h glfwGetMousePos" glfwGetMousePos :: Ptr Int32 -> Ptr Int32 -> IO ()
-foreign import ccall "GL/glfw.h glfwSetMousePos" glfwSetMousePos :: Int32 -> Int32 -> IO ()
+foreign import ccall unsafe glfwGetMousePos :: Ptr Int32 -> Ptr Int32 -> IO ()
+foreign import ccall unsafe glfwSetMousePos :: Int32 -> Int32 -> IO ()
 
 -- | Set or get the mouse wheel position.
 mouseWheel :: GL.StateVar Int
 mouseWheel = GL.makeStateVar glfwGetMouseWheel glfwSetMouseWheel
 --
-foreign import ccall "GL/glfw.h glfwGetMouseWheel" glfwGetMouseWheel :: IO Int
-foreign import ccall "GL/glfw.h glfwSetMouseWheel" glfwSetMouseWheel :: Int -> IO ()
+foreign import ccall unsafe glfwGetMouseWheel :: IO Int
+foreign import ccall unsafe glfwSetMouseWheel :: Int -> IO ()
 
 -- | Get joystick parameters.
 joystickParam :: Joystick -> JoystickParam -> GL.GettableStateVar Int
 joystickParam joy param = GL.makeGettableStateVar (glfwGetJoystickParam (fromEnum joy) (fromEnum param))
 --
-foreign import ccall "GL/glfw.h glfwGetJoystickParam" glfwGetJoystickParam :: Int -> Int -> IO Int
+foreign import ccall unsafe glfwGetJoystickParam :: Int -> Int -> IO Int
 
 -- | Get joystick positions. The returned list contains the positions
 --   for all available axes for the given joystick.
@@ -782,7 +782,7 @@ joystickPos joy = GL.makeGettableStateVar getter
         m <- glfwGetJoystickPos (fromEnum joy) arr n
         peekArray m arr)
 --
-foreign import ccall "GL/glfw.h glfwGetJoystickPos" glfwGetJoystickPos :: Int -> Ptr Float -> Int -> IO Int
+foreign import ccall unsafe glfwGetJoystickPos :: Int -> Ptr Float -> Int -> IO Int
 -- TODO: provide version that returns at most n axes like the C API
 
 -- | Get joystick button states. The returned list contains the states
@@ -797,7 +797,7 @@ joystickButtons joy = GL.makeGettableStateVar getter
         a <- peekArray m arr
         return $ map (toEnum . fromEnum) a)
 --
-foreign import ccall "GL/glfw.h glfwGetJoystickButtons" glfwGetJoystickButtons :: Int -> Ptr Int8 -> Int -> IO Int
+foreign import ccall unsafe glfwGetJoystickButtons :: Int -> Ptr Int8 -> Int -> IO Int
 
 -- | Callback type for 'keyCallback'.
 type KeyCallback = Key -> KeyButtonState -> IO ()
@@ -815,7 +815,7 @@ keyCallback = GL.makeSettableStateVar setter
       glfwSetCallbackIORef glfwKeyfun ptr
       glfwSetKeyCallback ptr
 --
-foreign import ccall "GL/glfw.h glfwSetKeyCallback" glfwSetKeyCallback :: FunPtr GLFWkeyfun -> IO ()
+foreign import ccall unsafe glfwSetKeyCallback :: FunPtr GLFWkeyfun -> IO ()
 
 -- | Callback type for 'charCallback'.
 type CharCallback = Char -> KeyButtonState -> IO ()
@@ -833,7 +833,7 @@ charCallback = GL.makeSettableStateVar setter
       glfwSetCallbackIORef glfwCharfun ptr
       glfwSetCharCallback ptr
 --
-foreign import ccall "GL/glfw.h glfwSetCharCallback" glfwSetCharCallback :: FunPtr GLFWcharfun -> IO ()
+foreign import ccall unsafe glfwSetCharCallback :: FunPtr GLFWcharfun -> IO ()
 
 -- | Callback type for 'mouseButtonCallback'.
 type MouseButtonCallback = MouseButton -> KeyButtonState -> IO ()
@@ -849,7 +849,7 @@ mouseButtonCallback = GL.makeSettableStateVar setter
       glfwSetCallbackIORef glfwMousebuttonfun ptr
       glfwSetMouseButtonCallback ptr
 --
-foreign import ccall "GL/glfw.h glfwSetMouseButtonCallback" glfwSetMouseButtonCallback :: FunPtr GLFWmousebuttonfun -> IO ()
+foreign import ccall unsafe glfwSetMouseButtonCallback :: FunPtr GLFWmousebuttonfun -> IO ()
 
 -- | Callback type for 'mousePosCallback'.
 type MousePosCallback = GL.Position -> IO ()
@@ -865,7 +865,7 @@ mousePosCallback = GL.makeSettableStateVar setter
       glfwSetCallbackIORef glfwMouseposfun ptr
       glfwSetMousePosCallback ptr
 --
-foreign import ccall "GL/glfw.h glfwSetMousePosCallback" glfwSetMousePosCallback :: FunPtr GLFWmouseposfun -> IO ()
+foreign import ccall unsafe glfwSetMousePosCallback :: FunPtr GLFWmouseposfun -> IO ()
 
 -- | Callback type for 'mouseWheelCallback'.
 type MouseWheelCallback = Int -> IO ()
@@ -890,7 +890,7 @@ mouseWheelCallback  = GL.makeSettableStateVar setter
       glfwSetMouseWheelCallback ptr
 
 --
-foreign import ccall "GL/glfw.h glfwSetMouseWheelCallback" glfwSetMouseWheelCallback :: FunPtr GLFWmousewheelfun -> IO ()
+foreign import ccall unsafe glfwSetMouseWheelCallback :: FunPtr GLFWmousewheelfun -> IO ()
 
 -- | Get or set the value of the high precision timer. The time is measured in
 --   seconds as a double precision floating point number.
@@ -900,40 +900,40 @@ foreign import ccall "GL/glfw.h glfwSetMouseWheelCallback" glfwSetMouseWheelCall
 time :: GL.StateVar Double
 time = GL.makeStateVar glfwGetTime glfwSetTime
 --
-foreign import ccall "GL/glfw.h glfwGetTime" glfwGetTime :: IO Double
-foreign import ccall "GL/glfw.h glfwSetTime" glfwSetTime :: Double -> IO ()
+foreign import ccall unsafe glfwGetTime :: IO Double
+foreign import ccall unsafe glfwSetTime :: Double -> IO ()
 
 -- | Put the calling thread to sleep for the requested period of time in
 --   seconds.
 --
 --   The minimum amount of time it is possible to sleep is generally in the
 --   range 1ms to 20ms.
-foreign import ccall "GL/glfw.h glfwSleep" sleep :: Double -> IO ()
+foreign import ccall unsafe "glfwSleep" sleep :: Double -> IO ()
 
 -- | Return True if the extension is supported, False otherwise.
 extensionSupported :: String -> IO Bool
 extensionSupported e = flip withCString glfwExtensionSupported e >>= return . toEnum
 --
-foreign import ccall "GL/glfw.h glfwExtensionSupported" glfwExtensionSupported :: CString -> IO Int
+foreign import ccall unsafe glfwExtensionSupported :: CString -> IO Int
 
 -- TODO:
--- foreign import ccall "GL/glfw.h glfwGetProcAddress" glfwGetProcAddress :: Ptr CChar -> FunPtr ?
--- foreign import ccall "GL/glfw.h glfwGetGLVersion" glfwGetGLVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
+-- foreign import ccall unsafe glfwGetProcAddress :: Ptr CChar -> FunPtr ?
+-- foreign import ccall unsafe glfwGetGLVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
 
 -- | Enable a 'SpecialFeature'.
 enableSpecial :: SpecialFeature -> IO ()
 enableSpecial f = glfwEnable (fromEnum f)
 --
-foreign import ccall "GL/glfw.h glfwEnable" glfwEnable :: Int -> IO ()
+foreign import ccall unsafe glfwEnable :: Int -> IO ()
 
 -- | Disable a 'SpecialFeature'.
 disableSpecial :: SpecialFeature -> IO ()
 disableSpecial f = glfwDisable (fromEnum f)
 --
-foreign import ccall "GL/glfw.h glfwDisable" glfwDisable :: Int -> IO ()
+foreign import ccall unsafe glfwDisable :: Int -> IO ()
 
---foreign import ccall "GL/glfw.h glfwReadImage" glfwReadImage :: Ptr CChar -> Ptr GLFWimage -> Int -> IO ()
---foreign import ccall "GL/glfw.h glfwFreeImage" glfwFreeImage :: Ptr GLFWimage -> IO ()
+--foreign import ccall unsafe glfwReadImage :: Ptr CChar -> Ptr GLFWimage -> Int -> IO ()
+--foreign import ccall unsafe glfwFreeImage :: Ptr GLFWimage -> IO ()
 
 -- | Read an image from a file specified by the given string and upload the
 --   image to OpenGL texture memory.
@@ -963,7 +963,7 @@ loadTexture2D fname flag = do
   r <- flip withCString (flip glfwLoadTexture2D (readFlag flag)) fname
   return $ toEnum r
 --
-foreign import ccall "GL/glfw.h glfwLoadTexture2D" glfwLoadTexture2D :: CString -> Int -> IO Int
+foreign import ccall unsafe glfwLoadTexture2D :: CString -> Int -> IO Int
 
 readFlag :: forall t. (Enum t) => [t] -> Int
 readFlag (x:xs) = fromEnum x .|. readFlag xs
@@ -977,7 +977,7 @@ loadMemoryTexture2D arr flag = withCAStringLen arr (\(ptr, len) -> do
   r <- glfwLoadMemoryTexture2D ptr len (readFlag flag)
   return $ toEnum r)
 --
-foreign import ccall "GL/glfw.h glfwLoadMemoryTexture2D" glfwLoadMemoryTexture2D :: Ptr CChar -> Int -> Int -> IO Int
+foreign import ccall unsafe glfwLoadMemoryTexture2D :: Ptr CChar -> Int -> Int -> IO Int
 
 glfwWindowsizefun    :: IORef (Maybe (FunPtr GLFWwindowsizefun))
 glfwWindowclosefun   :: IORef (Maybe (FunPtr GLFWwindowclosefun))
@@ -996,10 +996,10 @@ glfwMousewheelfun    = unsafePerformIO (newIORef Nothing)
 glfwKeyfun           = unsafePerformIO (newIORef Nothing)
 glfwCharfun          = unsafePerformIO (newIORef Nothing)
 
-foreign import ccall "wrapper" glfwWrapFun2 :: (Int -> Int -> IO ()) -> IO (FunPtr (Int -> Int -> IO ()))
-foreign import ccall "wrapper" glfwWrapFun2' :: (Int32 -> Int32 -> IO ()) -> IO (FunPtr (Int32 -> Int32 -> IO ()))
-foreign import ccall "wrapper" glfwWrapFun1 :: (Int -> IO ()) -> IO (FunPtr (Int -> IO ()))
-foreign import ccall "wrapper" glfwWrapFun0 :: IO () -> IO (FunPtr (IO ()))
+foreign import ccall unsafe "wrapper" glfwWrapFun2 :: (Int -> Int -> IO ()) -> IO (FunPtr (Int -> Int -> IO ()))
+foreign import ccall unsafe "wrapper" glfwWrapFun2' :: (Int32 -> Int32 -> IO ()) -> IO (FunPtr (Int32 -> Int32 -> IO ()))
+foreign import ccall unsafe "wrapper" glfwWrapFun1 :: (Int -> IO ()) -> IO (FunPtr (Int -> IO ()))
+foreign import ccall unsafe "wrapper" glfwWrapFun0 :: IO () -> IO (FunPtr (IO ()))
 
 glfwSetCallbackIORef :: forall a. IORef (Maybe (FunPtr a)) -> FunPtr a -> IO ()
 glfwSetCallbackIORef ref f = do
