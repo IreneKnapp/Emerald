@@ -79,7 +79,8 @@ module Graphics.UI.GLFW
     -- * GLFW thread support functions purposefully omitted
   ) where
 
-import Data.IORef
+import Control.Monad (liftM, liftM2)
+import Data.IORef    (IORef, atomicModifyIORef, newIORef, readIORef, writeIORef)
 import Foreign
 import Foreign.C
 import Foreign.Marshal
@@ -530,7 +531,7 @@ type GLFWcharfun          = Int -> Int -> IO ()
 -- | Initialize GLFW library. Returns True if successful, False otherwise. Must
 --   be called before any other GLFW functions.
 initialize :: IO Bool
-initialize = glfwInit >>= return . toEnum
+initialize = liftM toEnum glfwInit
 --
 foreign import ccall unsafe glfwInit :: IO Int
 
@@ -543,15 +544,15 @@ foreign import ccall unsafe glfwTerminate :: IO ()
 
 -- | Returns the GLFW C library version numbers.
 version :: GL.GettableStateVar Version
-version = GL.makeGettableStateVar getter
-  where
-    getter = do
-      with 0 (\major -> with 0 (\minor -> with 0 (\rev -> do
-      glfwGetVersion major minor rev
-      a <- peek major
-      b <- peek minor
-      c <- peek rev
-      return (a, b, c))))
+version = GL.makeGettableStateVar $
+  with 0 $ \x ->
+  with 0 $ \y ->
+  with 0 $ \z -> do
+    glfwGetVersion x y z
+    x' <- peek x
+    y' <- peek y
+    z' <- peek z
+    return (x', y', z')
 --
 foreign import ccall unsafe glfwGetVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
 
@@ -559,29 +560,12 @@ foreign import ccall unsafe glfwGetVersion :: Ptr Int -> Ptr Int -> Ptr Int -> I
 --   applications can only open one window.
 openWindow :: GL.Size -> [DisplayBits] -> WindowMode -> IO Bool
 openWindow (GL.Size w h) bits mode = do
-  let (r', g', b') = maybe (0, 0, 0) id $ filterBits (\x ->
-                case x of
-                  DisplayRGBBits r g b -> Just (r, g, b)
-                  _ -> Nothing) bits
-      a' = maybe 0 id $ filterBits (\x ->
-                case x of
-                  DisplayAlphaBits a -> Just a
-                  _ -> Nothing) bits
-      d' = maybe 0 id $ filterBits (\x ->
-                case x of
-                  DisplayDepthBits d -> Just d
-                  _ -> Nothing) bits
-      s' = maybe 0 id $ filterBits (\x ->
-                case x of
-                  DisplayStencilBits a -> Just a
-                  _ -> Nothing) bits
-  e <- glfwOpenWindow w h r' g' b' a' d' s' (fromEnum mode)
-  -- clear font texture
   writeIORef fontTextures []
-  return $ toEnum e
-  where
-    filterBits _ [] = Nothing
-    filterBits f (x:xs) = maybe (filterBits f xs) Just (f x)
+  liftM toEnum $ glfwOpenWindow w h r' g' b' a' d' s' $ fromEnum mode
+  where (r', g', b') = case bits of (_:DisplayRGBBits r g b:_) -> (r, g, b); _ -> (0, 0, 0)
+        a'           = case bits of (_:DisplayAlphaBits a:_)   -> a        ; _ -> 0
+        d'           = case bits of (_:DisplayDepthBits d:_)   -> d        ; _ -> 0
+        s'           = case bits of (_:DisplayStencilBits s:_) -> s        ; _ -> 0
 --
 foreign import ccall unsafe glfwOpenWindow :: Int32 -> Int32 -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO Int
 
@@ -606,13 +590,12 @@ foreign import ccall unsafe glfwSetWindowTitle :: CString -> IO ()
 -- | Get or set the size of the opened window.
 windowSize :: GL.StateVar GL.Size
 windowSize = GL.makeStateVar getter setter
-  where
-    getter = with 0 (\w -> with 0 (\h -> do
-      glfwGetWindowSize w h
-      w' <- peek w
-      h' <- peek h
-      return $ GL.Size w' h'))
-    setter (GL.Size w h) = glfwSetWindowSize w h
+  where getter =
+          with 0 $ \w ->
+          with 0 $ \h -> do
+            glfwGetWindowSize w h
+            liftM2 GL.Size (peek w) (peek h)
+        setter (GL.Size w h) = glfwSetWindowSize w h
 --
 foreign import ccall unsafe glfwGetWindowSize :: Ptr Int32 -> Ptr Int32 -> IO ()
 foreign import ccall unsafe glfwSetWindowSize :: Int32 -> Int32 -> IO ()
@@ -638,7 +621,7 @@ foreign import ccall unsafe glfwSwapInterval :: Int -> IO ()
 
 -- | Get the value of window parameters.
 windowParam :: WindowParam -> GL.GettableStateVar Int
-windowParam p = GL.makeGettableStateVar (glfwGetWindowParam (fromEnum p))
+windowParam p = GL.makeGettableStateVar $ glfwGetWindowParam $ fromEnum p
 --
 foreign import ccall unsafe glfwGetWindowParam :: Int -> IO Int
 
@@ -648,7 +631,7 @@ type WindowSizeCallback = GL.Size -> IO ()
 -- | Set the function that will be called every time the window size changes.
 windowSizeCallback :: GL.SettableStateVar WindowSizeCallback
 windowSizeCallback = GL.makeSettableStateVar (\f -> do
-  let g w h = f (GL.Size w h)
+  let g w h = f $ GL.Size w h
   ptr <- glfwWrapFun2' g
   glfwSetCallbackIORef glfwWindowsizefun ptr
   glfwSetWindowSizeCallback ptr)
