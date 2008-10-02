@@ -668,7 +668,7 @@ windowRefreshCallback = GL.makeSettableStateVar setter
 --
 foreign import ccall unsafe glfwSetWindowRefreshCallback :: FunPtr GLFWwindowrefreshfun -> IO ()
 
--- | Get a list of deteced 'VideoMode's, the max number of which is limited to
+-- | Get a list of detected 'VideoMode's, the max number of which is limited to
 --   256 for now.
 videoModes :: GL.GettableStateVar [VideoMode]
 videoModes = GL.makeGettableStateVar getter
