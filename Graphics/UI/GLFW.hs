@@ -636,7 +636,8 @@ windowSizeCallback = GL.makeSettableStateVar (\f -> do
   glfwSetCallbackIORef glfwWindowsizefun ptr
   glfwSetWindowSizeCallback ptr)
 --
-foreign import ccall unsafe glfwSetWindowSizeCallback :: FunPtr GLFWwindowsizefun -> IO ()
+-- glfwSetWindowSizeCallback executes the callback (see window.c), ccall cannot be marked unsafe
+foreign import ccall glfwSetWindowSizeCallback :: FunPtr GLFWwindowsizefun -> IO ()
 
 -- | Callback type for 'windowCloseCallback'.
 type WindowCloseCallback = IO ()
@@ -711,7 +712,7 @@ foreign import ccall unsafe "glfwPollEvents" pollEvents :: IO ()
 --   will be put to sleep until any event appears in the event queue.
 --   When events are ready, the events will be processed just as they are
 --   processed by 'pollEvents'.
-foreign import ccall unsafe "glfwWaitEvents" waitEvents :: IO ()
+foreign import ccall "glfwWaitEvents" waitEvents :: IO ()
 
 -- | Return a 'KeyButtonState', either 'Release' or 'Press', of the indicated
 --   key.
@@ -848,7 +849,8 @@ mousePosCallback = GL.makeSettableStateVar setter
       glfwSetCallbackIORef glfwMouseposfun ptr
       glfwSetMousePosCallback ptr
 --
-foreign import ccall unsafe glfwSetMousePosCallback :: FunPtr GLFWmouseposfun -> IO ()
+-- glfwSetMousePosCallback executes the callback (see input.c), ccall cannot be marked unsafe
+foreign import ccall glfwSetMousePosCallback :: FunPtr GLFWmouseposfun -> IO ()
 
 -- | Callback type for 'mouseWheelCallback'.
 type MouseWheelCallback = Int -> IO ()
@@ -873,7 +875,8 @@ mouseWheelCallback  = GL.makeSettableStateVar setter
       glfwSetMouseWheelCallback ptr
 
 --
-foreign import ccall unsafe glfwSetMouseWheelCallback :: FunPtr GLFWmousewheelfun -> IO ()
+-- glfwSetMouseWheelCallback executes the callback (see input.c), ccall cannot be marked unsafe
+foreign import ccall glfwSetMouseWheelCallback :: FunPtr GLFWmousewheelfun -> IO ()
 
 -- | Get or set the value of the high precision timer. The time is measured in
 --   seconds as a double precision floating point number.
