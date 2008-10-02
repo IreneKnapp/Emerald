@@ -609,7 +609,7 @@ foreign import ccall unsafe "glfwRestoreWindow" restoreWindow :: IO ()
 -- | Swap the back and front color buffers of the window. If 'AutoPollEvent' is
 --   enabled by 'enableSpecial' (which is the default), it also polls for new
 --   events before the swapping.
-foreign import ccall unsafe "glfwSwapBuffers" swapBuffers :: IO ()
+foreign import ccall "glfwSwapBuffers" swapBuffers :: IO ()
 
 -- | Set the minimum number of monitor retraces between each each buffer swap
 --   performed by 'swapBuffers'. If set to zero, buffer swaps will not be
@@ -706,7 +706,7 @@ foreign import ccall unsafe glfwGetDesktopMode :: Ptr Int -> IO ()
 --   function, all window states, keyboard states and mouse states are updated.
 --   If any related callback functions are registered, these are called during
 --   the call of 'pollEvents'.
-foreign import ccall unsafe "glfwPollEvents" pollEvents :: IO ()
+foreign import ccall "glfwPollEvents" pollEvents :: IO ()
 
 -- | Wait for events, such as user input and window events. The calling thread
 --   will be put to sleep until any event appears in the event queue.
