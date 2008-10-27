@@ -562,10 +562,16 @@ openWindow :: GL.Size -> [DisplayBits] -> WindowMode -> IO Bool
 openWindow (GL.Size w h) bits mode = do
   writeIORef fontTextures []
   liftM toEnum $ glfwOpenWindow w h r' g' b' a' d' s' $ fromEnum mode
-  where (r', g', b') = case bits of (_:DisplayRGBBits r g b:_) -> (r, g, b); _ -> (0, 0, 0)
-        a'           = case bits of (_:DisplayAlphaBits a:_)   -> a        ; _ -> 0
-        d'           = case bits of (_:DisplayDepthBits d:_)   -> d        ; _ -> 0
-        s'           = case bits of (_:DisplayStencilBits s:_) -> s        ; _ -> 0
+  where
+    (r', g', b', a', d', s') = gather bits (0, 0, 0, 0, 0, 0)
+
+    gather :: [DisplayBits] -> (Int, Int, Int, Int, Int, Int) -> (Int, Int, Int, Int, Int, Int)
+    gather (x:xs) (r, g, b, a, d, s) = gather xs $ case x of
+      DisplayRGBBits     r_ g_ b_ -> (r_, g_, b_, a , d , s )
+      DisplayAlphaBits   a_       -> (r , g , b , a_, d , s )
+      DisplayDepthBits   d_       -> (r , g , b , a , d_, s )
+      DisplayStencilBits s_       -> (r , g , b , a , d , s_)
+    gather [] vs = vs
 --
 foreign import ccall unsafe glfwOpenWindow :: Int32 -> Int32 -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO Int
 
