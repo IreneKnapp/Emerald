@@ -850,7 +850,14 @@ mousePosCallback :: GL.SettableStateVar MousePosCallback
 mousePosCallback = GL.makeSettableStateVar setter
   where
     setter f = do
-      let g x y = f $ GL.Position x y
+      let g x y = do
+            ptr <- malloc
+            poke ptr x
+            x32 <- (peek (castPtr ptr)) :: IO Int32
+            poke ptr y
+            y32 <- (peek (castPtr ptr)) :: IO Int32
+            free ptr
+            f $ GL.Position x32 y32
       ptr <- glfwWrapFun2' g
       glfwSetCallbackIORef glfwMouseposfun ptr
       glfwSetMousePosCallback ptr
