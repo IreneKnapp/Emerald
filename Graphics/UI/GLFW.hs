@@ -203,7 +203,7 @@ data KeyButtonState
 data Key
   = CharKey Char
   | SpecialKey SpecialKey
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 instance Enum Key where
   fromEnum (CharKey c)    = fromEnum c
@@ -276,7 +276,7 @@ data SpecialKey
   | KP_DECIMAL
   | KP_EQUAL
   | KP_ENTER
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 instance Enum SpecialKey where
   fromEnum UNKNOWN     = -1
