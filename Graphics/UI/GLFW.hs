@@ -53,6 +53,7 @@ module Graphics.UI.GLFW
   , mousePos
   , mouseWheel
   , joystickPos
+  , joystickPos'
   , joystickButtons
     -- * Callbacks
     -- ** Window callbacks
@@ -757,35 +758,39 @@ foreign import ccall unsafe glfwSetMouseWheel :: Int -> IO ()
 
 -- | Get joystick parameters.
 joystickParam :: Joystick -> JoystickParam -> GL.GettableStateVar Int
-joystickParam joy param = GL.makeGettableStateVar (glfwGetJoystickParam (fromEnum joy) (fromEnum param))
+joystickParam j param = GL.makeGettableStateVar (glfwGetJoystickParam (fromEnum j) (fromEnum param))
 --
 foreign import ccall unsafe glfwGetJoystickParam :: Int -> Int -> IO Int
 
+-- | Get a certain number of axis positions for the given joystick. If the
+--   number of positions requested is is greater than the number available, the
+--   unavailable positions will be 0.
+joystickPos :: Joystick -> Int -> GL.GettableStateVar [Float]
+joystickPos j n = GL.makeGettableStateVar $
+  withArray (take n (repeat 0)) $ \a -> do
+    glfwGetJoystickPos (fromEnum j) a n
+    peekArray n a
+
 -- | Get joystick positions. The returned list contains the positions
 --   for all available axes for the given joystick.
-joystickPos :: Joystick -> GL.GettableStateVar [Float]
-joystickPos joy = GL.makeGettableStateVar getter
-  where
-    getter = do
-      n <- glfwGetJoystickParam (fromEnum joy) (fromEnum Axes)
-      withArray (take n (repeat 0)) (\arr -> do
-        m <- glfwGetJoystickPos (fromEnum joy) arr n
-        peekArray m arr)
+joystickPos' :: Joystick -> GL.GettableStateVar [Float]
+joystickPos' j = GL.makeGettableStateVar $ do
+  n <- glfwGetJoystickParam (fromEnum j) (fromEnum Axes)
+  allocaArray n $ \a -> do
+    n' <- glfwGetJoystickPos (fromEnum j) a n
+    peekArray n' a
 --
 foreign import ccall unsafe glfwGetJoystickPos :: Int -> Ptr Float -> Int -> IO Int
--- TODO: provide version that returns at most n axes like the C API
 
 -- | Get joystick button states. The returned list contains the states
 --   for all available buttons for the given joystick.
 joystickButtons :: Joystick -> GL.GettableStateVar [KeyButtonState]
-joystickButtons joy = GL.makeGettableStateVar getter
-  where
-    getter = do
-      n <- glfwGetJoystickParam (fromEnum joy) (fromEnum Buttons)
-      withArray (take n (repeat 0)) (\arr -> do
-        m <- glfwGetJoystickButtons (fromEnum joy) arr n
-        a <- peekArray m arr
-        return $ map (toEnum . fromEnum) a)
+joystickButtons j = GL.makeGettableStateVar $ do
+  n <- glfwGetJoystickParam (fromEnum j) (fromEnum Buttons)
+  allocaArray n $ \a -> do
+    n' <- glfwGetJoystickButtons (fromEnum j) a n
+    l  <- peekArray n' a
+    return $ map (toEnum . fromEnum) l
 --
 foreign import ccall unsafe glfwGetJoystickButtons :: Int -> Ptr Int8 -> Int -> IO Int
 
