@@ -1,7 +1,7 @@
 -- | Haskell Interface to GLFW (<http://glfw.sourceforge.net>).
 --   Supports GLFW API version 2.6.
 
-{-# LANGUAGE ExistentialQuantification, ForeignFunctionInterface #-}
+{-# LANGUAGE CPP, ExistentialQuantification, ForeignFunctionInterface #-}
 
 module Graphics.UI.GLFW
   ( -- * Data types
@@ -879,9 +879,11 @@ mouseWheelCallback :: GL.SettableStateVar MouseWheelCallback
 mouseWheelCallback  = GL.makeSettableStateVar setter
   where
     setter f = do
-      -- this is a very dirty hack, but i (shahn) think,
-      -- it's necessary to work around a bug in ghc's FFI.
-      -- ghc bug report: http://hackage.haskell.org/trac/ghc/ticket/2594
+#if __GLASGOW_HASKELL__ >= 610
+      ptr <- glfwWrapFun1 f
+#else
+      -- Work around bug in GHC FFI
+      -- See http://hackage.haskell.org/trac/ghc/ticket/2594
       let g x = do
             ptr <- malloc
             poke ptr x
@@ -889,6 +891,7 @@ mouseWheelCallback  = GL.makeSettableStateVar setter
             free ptr
             f (fromIntegral x32)
       ptr <- glfwWrapFun1 g
+#endif
       glfwSetCallbackIORef glfwMousewheelfun ptr
       glfwSetMouseWheelCallback ptr
 
