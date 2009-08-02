@@ -87,6 +87,7 @@ import Foreign.C
 import Foreign.Marshal
 import Graphics.Rendering.OpenGL (($=))
 import System.IO.Unsafe
+import Graphics.Rendering.OpenGL (GLfloat)
 import qualified Graphics.Rendering.OpenGL as GL
 
 -- | Version is represented by (major, minor, revision), used
@@ -522,11 +523,11 @@ _GLFW_INFINITY :: Double
 _GLFW_INFINITY = 100000
 
 -- Callback function type
-type GLFWwindowsizefun    = Int32 -> Int32 -> IO ()
+type GLFWwindowsizefun    = Int -> Int -> IO ()
 type GLFWwindowclosefun   = IO ()
 type GLFWwindowrefreshfun = IO ()
 type GLFWmousebuttonfun   = Int -> Int -> IO ()
-type GLFWmouseposfun      = Int32 -> Int32 -> IO ()
+type GLFWmouseposfun      = Int -> Int -> IO ()
 type GLFWmousewheelfun    = Int -> IO ()
 type GLFWkeyfun           = Int -> Int -> IO ()
 type GLFWcharfun          = Int -> Int -> IO ()
@@ -564,7 +565,7 @@ foreign import ccall unsafe glfwGetVersion :: Ptr Int -> Ptr Int -> Ptr Int -> I
 openWindow :: GL.Size -> [DisplayBits] -> WindowMode -> IO Bool
 openWindow (GL.Size w h) bits mode = do
   writeIORef fontTextures []
-  liftM toEnum $ glfwOpenWindow w h r' g' b' a' d' s' $ fromEnum mode
+  liftM toEnum $ glfwOpenWindow (fromIntegral w) (fromIntegral h) r' g' b' a' d' s' $ fromEnum mode
   where
     (r', g', b', a', d', s') = gather bits (0, 0, 0, 0, 0, 0)
 
@@ -576,7 +577,7 @@ openWindow (GL.Size w h) bits mode = do
       DisplayStencilBits s_       -> (r , g , b , a , d , s_)
     gather [] vs = vs
 
-foreign import ccall unsafe glfwOpenWindow :: Int32 -> Int32 -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO Int
+foreign import ccall unsafe glfwOpenWindow :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO Int
 
 -- | Close the open window and destroy the associated OpenGL context.
 foreign import ccall unsafe "glfwCloseWindow" closeWindow :: IO ()
@@ -603,11 +604,11 @@ windowSize = GL.makeStateVar getter setter
           with 0 $ \w ->
           with 0 $ \h -> do
             glfwGetWindowSize w h
-            liftM2 GL.Size (peek w) (peek h)
-        setter (GL.Size w h) = glfwSetWindowSize w h
+            liftM2 GL.Size (fmap fromIntegral $ peek w) (fmap fromIntegral $ peek h)
+        setter (GL.Size w h) = glfwSetWindowSize (fromIntegral w) (fromIntegral h)
 
-foreign import ccall unsafe glfwGetWindowSize :: Ptr Int32 -> Ptr Int32 -> IO ()
-foreign import ccall unsafe glfwSetWindowSize :: Int32 -> Int32 -> IO ()
+foreign import ccall unsafe glfwGetWindowSize :: Ptr Int -> Ptr Int -> IO ()
+foreign import ccall unsafe glfwSetWindowSize :: Int -> Int -> IO ()
 
 -- | Iconify the window.
 foreign import ccall unsafe "glfwIconifyWindow" iconifyWindow :: IO ()
@@ -640,8 +641,8 @@ type WindowSizeCallback = GL.Size -> IO ()
 -- | Set the function that will be called every time the window size changes.
 windowSizeCallback :: GL.SettableStateVar WindowSizeCallback
 windowSizeCallback = GL.makeSettableStateVar (\f -> do
-  let g w h = f $ GL.Size w h
-  ptr <- glfwWrapFun2' g
+  let g w h = f $ GL.Size (fromIntegral w) (fromIntegral h)
+  ptr <- glfwWrapFun2 g
   glfwSetCallbackIORef glfwWindowsizefun ptr
   glfwSetWindowSizeCallback ptr)
 
@@ -744,11 +745,11 @@ mousePos = GL.makeStateVar getter setter
       glfwGetMousePos x y
       mx <- peek x
       my <- peek y
-      return $ GL.Position mx my))
-    setter (GL.Position x y) = glfwSetMousePos x y
+      return $ GL.Position (fromIntegral mx) (fromIntegral my)))
+    setter (GL.Position x y) = glfwSetMousePos (fromIntegral x) (fromIntegral y)
 
-foreign import ccall unsafe glfwGetMousePos :: Ptr Int32 -> Ptr Int32 -> IO ()
-foreign import ccall unsafe glfwSetMousePos :: Int32 -> Int32 -> IO ()
+foreign import ccall unsafe glfwGetMousePos :: Ptr Int -> Ptr Int -> IO ()
+foreign import ccall unsafe glfwSetMousePos :: Int -> Int -> IO ()
 
 -- | Set or get the mouse wheel position.
 mouseWheel :: GL.StateVar Int
@@ -858,12 +859,12 @@ mousePosCallback = GL.makeSettableStateVar setter
       let g x y = do
             ptr <- malloc
             poke ptr x
-            x32 <- (peek (castPtr ptr)) :: IO Int32
+            x32 <- (peek (castPtr ptr)) :: IO Int
             poke ptr y
-            y32 <- (peek (castPtr ptr)) :: IO Int32
+            y32 <- (peek (castPtr ptr)) :: IO Int
             free ptr
-            f $ GL.Position x32 y32
-      ptr <- glfwWrapFun2' g
+            f $ GL.Position (fromIntegral x32) (fromIntegral y32)
+      ptr <- glfwWrapFun2 g
       glfwSetCallbackIORef glfwMouseposfun ptr
       glfwSetMousePosCallback ptr
 
@@ -1002,7 +1003,6 @@ glfwKeyfun           = unsafePerformIO (newIORef Nothing)
 glfwCharfun          = unsafePerformIO (newIORef Nothing)
 
 foreign import ccall unsafe "wrapper" glfwWrapFun2 :: (Int -> Int -> IO ()) -> IO (FunPtr (Int -> Int -> IO ()))
-foreign import ccall unsafe "wrapper" glfwWrapFun2' :: (Int32 -> Int32 -> IO ()) -> IO (FunPtr (Int32 -> Int32 -> IO ()))
 foreign import ccall unsafe "wrapper" glfwWrapFun1 :: (Int -> IO ()) -> IO (FunPtr (Int -> IO ()))
 foreign import ccall unsafe "wrapper" glfwWrapFun0 :: IO () -> IO (FunPtr (IO ()))
 
@@ -1085,13 +1085,13 @@ renderString name s = do
   GL.preservingMatrix $ mapM_ (renderChar font) s
   GL.texture GL.Texture2D $= GL.Disabled
 
-vector3 :: Float -> Float -> Float -> GL.Vector3 Float
+vector3 :: GLfloat -> GLfloat -> GLfloat -> GL.Vector3 GLfloat
 vector3 = GL.Vector3
 
-vertex3 :: Float -> Float -> Float -> GL.Vertex3 Float
+vertex3 :: GLfloat -> GLfloat -> GLfloat -> GL.Vertex3 GLfloat
 vertex3 = GL.Vertex3
 
-texCoord2 :: Float -> Float -> GL.TexCoord2 Float
+texCoord2 :: GLfloat -> GLfloat -> GL.TexCoord2 GLfloat
 texCoord2 = GL.TexCoord2
 
 bitmap8x16 :: String
