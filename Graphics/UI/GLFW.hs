@@ -856,14 +856,20 @@ mousePosCallback :: GL.SettableStateVar MousePosCallback
 mousePosCallback = GL.makeSettableStateVar setter
   where
     setter f = do
-      let g x y = do
+      let g x y = f =<< do
+#if _GLASGOW_HASKELL__ >= 610
+            return $ GL.Position (fromIntegral x) (fromIntegral y)
+#else
+      -- Work around bug in GHC FFI
+      -- See http://hackage.haskell.org/trac/ghc/ticket/2594
             ptr <- malloc
             poke ptr x
-            x32 <- (peek (castPtr ptr)) :: IO Int
+            x32 <- (peek (castPtr ptr)) :: IO Int32
             poke ptr y
-            y32 <- (peek (castPtr ptr)) :: IO Int
+            y32 <- (peek (castPtr ptr)) :: IO Int32
             free ptr
-            f $ GL.Position (fromIntegral x32) (fromIntegral y32)
+            return $ GL.Position (fromIntegral x32) (fromIntegral y32)
+#endif
       ptr <- glfwWrapFun2 g
       glfwSetCallbackIORef glfwMouseposfun ptr
       glfwSetMousePosCallback ptr
