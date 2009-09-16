@@ -77,7 +77,7 @@ library
       if os(darwin)
         include-dirs: glfw/lib/macosx
         frameworks:   AGL Carbon OpenGL
-        cc-options:   -march=apple
+        cc-options:   -msse2
         c-sources:
           glfw/lib/macosx/macosx_enable.c
           glfw/lib/macosx/macosx_fullscreen.c
