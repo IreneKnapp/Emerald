@@ -1,11 +1,10 @@
 //========================================================================
 // GLFW - An OpenGL framework
-// File:        macosx_joystick.c
-// Platform:    Mac OS X
-// API Version: 2.6
-// WWW:         http://glfw.sourceforge.net
+// Platform:    Cocoa/NSOpenGL
+// API Version: 2.7
+// WWW:         http://www.glfw.org/
 //------------------------------------------------------------------------
-// Copyright (c) 2002-2006 Camilla Berglund
+// Copyright (c) 2009-2010 Camilla Berglund <elmindreda@elmindreda.org>
 //
 // This software is provided 'as-is', without any express or implied
 // warranty. In no event will the authors be held liable for any damages
@@ -30,21 +29,23 @@
 
 #include "internal.h"
 
-// TO DO: use HID manager to implement joystick support.
+//************************************************************************
+//****               Platform implementation functions                ****
+//************************************************************************
 
-int _glfwPlatformGetJoystickParam( int joy, int param )
+//========================================================================
+// Enable and disable system keys
+//========================================================================
+
+void _glfwPlatformEnableSystemKeys( void )
 {
-    // GL_FALSE == 0
-    return 0;
+    // This is checked in macosx_window.m; we take no action here
 }
 
-int _glfwPlatformGetJoystickPos( int joy, float *pos, int numaxes )
+void _glfwPlatformDisableSystemKeys( void )
 {
-    return 0;
-}
-
-int _glfwPlatformGetJoystickButtons( int joy, unsigned char *buttons, int numbuttons )
-{
-    return 0;
+    // This is checked in macosx_window.m; we take no action here
+    // I don't think it's really possible to disable stuff like Exposé
+    // except in full-screen mode.
 }
 

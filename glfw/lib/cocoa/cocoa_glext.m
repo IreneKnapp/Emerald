@@ -1,11 +1,10 @@
 //========================================================================
 // GLFW - An OpenGL framework
-// File:        macosx_glext.c
-// Platform:    Mac OS X
-// API Version: 2.6
-// WWW:         http://glfw.sourceforge.net
+// Platform:    Cocoa/NSOpenGL
+// API Version: 2.7
+// WWW:         http://www.glfw.org/
 //------------------------------------------------------------------------
-// Copyright (c) 2002-2006 Camilla Berglund
+// Copyright (c) 2009-2010 Camilla Berglund <elmindreda@elmindreda.org>
 //
 // This software is provided 'as-is', without any express or implied
 // warranty. In no event will the authors be held liable for any damages
@@ -30,11 +29,23 @@
 
 #include "internal.h"
 
+//************************************************************************
+//****               Platform implementation functions                ****
+//************************************************************************
+
+//========================================================================
+// Check if an OpenGL extension is available at runtime
+//========================================================================
+
 int _glfwPlatformExtensionSupported( const char *extension )
 {
     // There are no AGL, CGL or NSGL extensions.
     return GL_FALSE;
 }
+
+//========================================================================
+// Get the function pointer to an OpenGL function
+//========================================================================
 
 void * _glfwPlatformGetProcAddress( const char *procname )
 {
@@ -42,7 +53,7 @@ void * _glfwPlatformGetProcAddress( const char *procname )
                                                         procname,
                                                         kCFStringEncodingASCII );
 
-    void *symbol = CFBundleGetFunctionPointerForName( _glfwLibrary.Libs.OpenGLFramework,
+    void *symbol = CFBundleGetFunctionPointerForName( _glfwLibrary.OpenGLFramework,
                                                       symbolName );
 
     CFRelease( symbolName );

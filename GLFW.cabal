@@ -1,9 +1,9 @@
 name:          GLFW
-version:       0.4.1
+version:       0.5.0.0
 homepage:      http://haskell.org/haskellwiki/GLFW
 maintainer:    Paul H. Liu <paul@thev.net>
 cabal-version: >= 1.6
-build-type:    Simple
+build-type:    Custom
 category:      Graphics
 synopsis:      A Haskell binding for GLFW
 description:   A Haskell binding for GLFW, a window system independent toolkit
@@ -16,12 +16,12 @@ license-file:  LICENSE
 extra-source-files:
   Changelog.txt
   README.txt
-  glfw/license.txt
+  glfw/COPYING.txt
   glfw/include/GL/glfw.h
   glfw/lib/internal.h
   glfw/lib/x11/platform.h
   glfw/lib/win32/platform.h
-  glfw/lib/macosx/platform.h
+  glfw/lib/cocoa/platform.h
 
 flag dynamic
   description: Dynamically link with GLFW C libray if your system provides it.
@@ -75,18 +75,18 @@ library
         glfw/lib/x11/x11_window.c
     else
       if os(darwin)
-        include-dirs: glfw/lib/macosx
-        frameworks:   AGL Carbon OpenGL
-        cc-options:   -msse2
+        x-cc-name: gcc
+        include-dirs: glfw/lib/cocoa
+        frameworks:   Cocoa OpenGL
         c-sources:
-          glfw/lib/macosx/macosx_enable.c
-          glfw/lib/macosx/macosx_fullscreen.c
-          glfw/lib/macosx/macosx_glext.c
-          glfw/lib/macosx/macosx_init.c
-          glfw/lib/macosx/macosx_joystick.c
-          glfw/lib/macosx/macosx_thread.c
-          glfw/lib/macosx/macosx_time.c
-          glfw/lib/macosx/macosx_window.c
+          glfw/lib/cocoa/cocoa_enable.m
+          glfw/lib/cocoa/cocoa_fullscreen.m
+          glfw/lib/cocoa/cocoa_glext.m
+          glfw/lib/cocoa/cocoa_init.m
+          glfw/lib/cocoa/cocoa_joystick.m
+          glfw/lib/cocoa/cocoa_thread.c
+          glfw/lib/cocoa/cocoa_time.m
+          glfw/lib/cocoa/cocoa_window.m
       else
         if os(mingw32)
           include-dirs:    glfw/lib/win32

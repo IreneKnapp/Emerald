@@ -1,11 +1,10 @@
 //========================================================================
 // GLFW - An OpenGL framework
-// File:        macosx_time.c
-// Platform:    Mac OS X
-// API Version: 2.6
-// WWW:         http://glfw.sourceforge.net
+// Platform:    Cocoa/NSOpenGL
+// API Version: 2.7
+// WWW:         http://www.glfw.org/
 //------------------------------------------------------------------------
-// Copyright (c) 2002-2006 Camilla Berglund
+// Copyright (c) 2009-2010 Camilla Berglund <elmindreda@elmindreda.org>
 //
 // This software is provided 'as-is', without any express or implied
 // warranty. In no event will the authors be held liable for any damages
@@ -30,6 +29,8 @@
 
 #include "internal.h"
 
+#include <sys/time.h>
+
 //************************************************************************
 //****               Platform implementation functions                ****
 //************************************************************************
@@ -40,12 +41,8 @@
 
 double _glfwPlatformGetTime( void )
 {
-    struct timeval  tv;
-
-    gettimeofday( &tv, NULL );
-    return tv.tv_sec + (double) tv.tv_usec / 1000000.0 - _glfwLibrary.Timer.t0;
+    return [NSDate timeIntervalSinceReferenceDate] - _glfwLibrary.Timer.t0;
 }
-
 
 //========================================================================
 // Set timer value in seconds
@@ -53,12 +50,8 @@ double _glfwPlatformGetTime( void )
 
 void _glfwPlatformSetTime( double time )
 {
-    struct timeval  tv;
-
-    gettimeofday( &tv, NULL );
-    _glfwLibrary.Timer.t0 = tv.tv_sec + (double) tv.tv_usec / 1000000.0 - time;
+    _glfwLibrary.Timer.t0 = [NSDate timeIntervalSinceReferenceDate] - time;
 }
-
 
 //========================================================================
 // Put a thread to sleep for a specified amount of time
