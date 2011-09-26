@@ -1073,12 +1073,12 @@ renderChar _ c = do
   GL.preservingMatrix $ GL.renderPrimitive GL.Quads (do
     GL.texCoord (texCoord2 x y)
     GL.vertex (vertex3 0 h 0)
-    GL.texCoord (texCoord2 (x + dx) y)
-    GL.vertex (vertex3 w h 0)
+    GL.texCoord (texCoord2 x (y + dy))
+    GL.vertex (vertex3 0 0 0)
     GL.texCoord (texCoord2 (x + dx) (y + dy))
     GL.vertex (vertex3 w 0 0)
-    GL.texCoord (texCoord2 x (y + dy))
-    GL.vertex (vertex3 0 0 0))
+    GL.texCoord (texCoord2 (x + dx) y)
+    GL.vertex (vertex3 w h 0))
   GL.translate (vector3 w 0 0)
 
 -- | Render a text string using the given 'BitmapFont'. Text is rendered
