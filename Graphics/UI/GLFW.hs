@@ -84,9 +84,7 @@ import Control.Monad (liftM, liftM2)
 import Data.IORef    (IORef, atomicModifyIORef, newIORef, readIORef, writeIORef)
 import Foreign
 import Foreign.C
-import Foreign.Marshal
 import Graphics.Rendering.OpenGL (($=))
-import System.IO.Unsafe
 import Graphics.Rendering.OpenGL (GLfloat)
 import qualified Graphics.Rendering.OpenGL as GL
 
@@ -770,7 +768,7 @@ foreign import ccall unsafe glfwGetJoystickParam :: Int -> Int -> IO Int
 joystickPos :: Joystick -> Int -> GL.GettableStateVar [Float]
 joystickPos j n = GL.makeGettableStateVar $
   withArray (replicate n 0) $ \a -> do
-    glfwGetJoystickPos (fromEnum j) a n
+    _ <- glfwGetJoystickPos (fromEnum j) a n
     peekArray n a
 
 -- | Get joystick positions. The returned list contains the positions
@@ -1057,7 +1055,7 @@ loadFont name = do
           GL.textureBinding GL.Texture2D $= Just font
           -- this next line is important, otherwise it won't render the texture!
           GL.textureFilter GL.Texture2D $= ((GL.Linear', Nothing), GL.Linear')
-          loadMemoryTexture2D bitmap [OriginUL, NoRescale]
+          _ <- loadMemoryTexture2D bitmap [OriginUL, NoRescale]
           writeIORef fontTextures ((name, font):l)
           return font
         _ -> error "GLFW: loadFont Unable to load texture"
