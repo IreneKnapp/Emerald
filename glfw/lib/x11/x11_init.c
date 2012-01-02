@@ -135,7 +135,7 @@ static void initLibraries( void )
 // Terminate GLFW when exiting application
 //========================================================================
 
-static void glfw_atexit( void )
+static void glfw_atexit( int c, void* p )
 {
     glfwTerminate();
 }
@@ -234,7 +234,7 @@ int _glfwPlatformInit( void )
     initLibraries();
 
     // Install atexit() routine
-    atexit( glfw_atexit );
+    on_exit( glfw_atexit, NULL );
 
     // Initialize joysticks
     _glfwInitJoysticks();
