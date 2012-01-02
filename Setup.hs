@@ -19,27 +19,29 @@ myBuildHook pkg_descr local_bld_info user_hooks bld_flags =
     let lib       = fromJust (library pkg_descr)
         lib_bi    = libBuildInfo lib
         custom_bi = customFieldsBI lib_bi
-        cpp_name  = fromJust (lookup "x-cc-name" custom_bi)
-        c_srcs    = cSources lib_bi
-        cc_opts   = "-S" : ccOptions lib_bi
-        inc_dirs  = includeDirs lib_bi
-        lib_dirs  = extraLibDirs lib_bi
-        bld_dir   = buildDir local_bld_info
-        prog      = ConfiguredProgram { programId = cpp_name, programVersion = Nothing,
-                                        programDefaultArgs = [], programOverrideArgs = [],
-                                        programLocation = FoundOnSystem { locationPath = cpp_name } }
-    -- Compile C/C++ sources
-    putStrLn $ "invoking my compile phase " ++ cpp_name
-    objs <- mapM (compileCxx prog cc_opts inc_dirs bld_dir) c_srcs
-    -- Remove C/C++ source code from the hooked build (don't change libs)
-    let 
-        lib_bi'    = lib_bi { cSources = map replaceWithAsm c_srcs }
-        lib'       = lib    { libBuildInfo = lib_bi' }
-        pkg_descr' = pkg_descr { library = Just lib' }
-    -- The following line invokes the standard build behaviour
-    putStrLn "Invoke default build hook"
-    bh <- buildHook simpleUserHooks pkg_descr' local_bld_info user_hooks bld_flags
-    return bh
+    case lookup "x-cc-name" custom_bi of
+      Nothing -> buildHook simpleUserHooks pkg_descr local_bld_info user_hooks bld_flags
+      Just cpp_name -> do
+        let cpp_name  = fromJust (lookup "x-cc-name" custom_bi)
+            c_srcs    = cSources lib_bi
+            cc_opts   = "-S" : ccOptions lib_bi
+            inc_dirs  = includeDirs lib_bi
+            lib_dirs  = extraLibDirs lib_bi
+            bld_dir   = buildDir local_bld_info
+            prog      = ConfiguredProgram { programId = cpp_name, programVersion = Nothing,
+                                            programDefaultArgs = [], programOverrideArgs = [],
+                                            programLocation = FoundOnSystem { locationPath = cpp_name } }
+        -- Compile C/C++ sources
+        putStrLn $ "invoking my compile phase " ++ cpp_name
+        objs <- mapM (compileCxx prog cc_opts inc_dirs bld_dir) c_srcs
+        -- Remove C/C++ source code from the hooked build (don't change libs)
+        let 
+            lib_bi'    = lib_bi { cSources = map replaceWithAsm c_srcs }
+            lib'       = lib    { libBuildInfo = lib_bi' }
+            pkg_descr' = pkg_descr { library = Just lib' }
+        -- The following line invokes the standard build behaviour
+        putStrLn "Invoke default build hook"
+        buildHook simpleUserHooks pkg_descr' local_bld_info user_hooks bld_flags
 
 compileCxx :: ConfiguredProgram  -- ^ C/C++ compiler (gcc)
            -> [String]           -- ^ Compile options from Cabal and wxConfig
