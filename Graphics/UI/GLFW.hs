@@ -124,18 +124,28 @@ data WindowHint
   | Stereo
   | NoResize
   | FSAASamples
+  | OpenGLVersionMajor
+  | OpenGLVersionMinor
+  | OpenGLForwardCompat
+  | OpenGLDebugContext
+  | OpenGLProfile
   deriving (Eq, Show)
 
 instance Enum WindowHint where
-  fromEnum RefreshRate    = 0x0002000B
-  fromEnum AccumRedBits   = 0x0002000C
-  fromEnum AccumGreenBits = 0x0002000D
-  fromEnum AccumBlueBits  = 0x0002000E
-  fromEnum AccumAlphaButs = 0x0002000F
-  fromEnum AuxBuffers     = 0x00020010
-  fromEnum Stereo         = 0x00020011
-  fromEnum NoResize       = 0x00020012
-  fromEnum FSAASamples    = 0x00020013
+  fromEnum RefreshRate         = 0x0002000B
+  fromEnum AccumRedBits        = 0x0002000C
+  fromEnum AccumGreenBits      = 0x0002000D
+  fromEnum AccumBlueBits       = 0x0002000E
+  fromEnum AccumAlphaButs      = 0x0002000F
+  fromEnum AuxBuffers          = 0x00020010
+  fromEnum Stereo              = 0x00020011
+  fromEnum NoResize            = 0x00020012
+  fromEnum FSAASamples         = 0x00020013
+  fromEnum OpenGLVersionMajor  = 0x00020014
+  fromEnum OpenGLVersionMinor  = 0x00020015
+  fromEnum OpenGLForwardCompat = 0x00020016
+  fromEnum OpenGLDebugContext  = 0x00020017
+  fromEnum OpenGLProfile       = 0x00020018
   toEnum 0x0002000B = RefreshRate
   toEnum 0x0002000C = AccumRedBits
   toEnum 0x0002000D = AccumGreenBits
@@ -145,6 +155,11 @@ instance Enum WindowHint where
   toEnum 0x00020011 = Stereo
   toEnum 0x00020012 = NoResize
   toEnum 0x00020013 = FSAASamples
+  toEnum 0x00020014 = OpenGLVersionMajor
+  toEnum 0x00020015 = OpenGLVersionMinor
+  toEnum 0x00020016 = OpenGLForwardCompat
+  toEnum 0x00020017 = OpenGLDebugContext
+  toEnum 0x00020018 = OpenGLProfile
   toEnum _          = error "GLFW: WindowHint toEnum out of bounds"
 
 -- | Window parameters used in gettable variable 'windowParam'.
