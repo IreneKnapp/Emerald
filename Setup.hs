@@ -9,6 +9,7 @@ import Distribution.PackageDescription
 import System.FilePath 
 import System.Directory
 import Data.Maybe (fromJust)
+import Foreign (bitSize)
 import Control.Monad (when)
 
 main :: IO ()
@@ -24,7 +25,8 @@ myBuildHook pkg_descr local_bld_info user_hooks bld_flags =
       Just cpp_name -> do
         let cpp_name  = fromJust (lookup "x-cc-name" custom_bi)
             c_srcs    = cSources lib_bi
-            cc_opts   = "-S" : ccOptions lib_bi
+            mbits     = bitSize (undefined :: Int)
+            cc_opts   = ("-m" ++ show mbits) : "-S" : ccOptions lib_bi
             inc_dirs  = includeDirs lib_bi
             lib_dirs  = extraLibDirs lib_bi
             bld_dir   = buildDir local_bld_info

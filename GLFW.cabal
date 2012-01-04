@@ -2,7 +2,7 @@ name:          GLFW
 version:       0.5.0.0
 homepage:      http://haskell.org/haskellwiki/GLFW
 maintainer:    Paul H. Liu <paul@thev.net>
-cabal-version: >= 1.6
+cabal-version: >= 1.10
 build-type:    Custom
 category:      Graphics
 synopsis:      A Haskell binding for GLFW
