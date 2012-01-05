@@ -9,6 +9,7 @@ module Graphics.UI.GLFW
   , DisplayBits(..)
   , WindowMode(..)
   , WindowHint(..)
+  , Profile(..)
   , WindowParam(..)
   , VideoMode(..)
   , KeyButtonState(..)
@@ -115,52 +116,54 @@ instance Enum WindowMode where
 
 -- | Window hints, used in settable variable 'openWindowHint'.
 data WindowHint
-  = RefreshRate
-  | AccumRedBits
-  | AccumGreenBits
-  | AccumBlueBits
-  | AccumAlphaButs
-  | AuxBuffers
-  | Stereo
-  | NoResize
-  | FSAASamples
-  | OpenGLVersionMajor
-  | OpenGLVersionMinor
-  | OpenGLForwardCompat
-  | OpenGLDebugContext
-  | OpenGLProfile
+  -- | Vertical monitor refresh rate in Hz (only used for fullscreen windows).
+  --   Zero means system default.
+  = RefreshRate Int
+  -- | Number of bits for the red channel of the accumulation buffer.
+  | AccumRedBits Int
+  -- | Number of bits for the green channel of the accumulation buffer.
+  | AccumGreenBits Int
+  -- | Number of bits for the blue channel of the accumulation buffer.
+  | AccumBlueBits Int
+  -- | Number of bits for the alpha channel of the accumulation buffer.
+  | AccumAlphaBits Int
+  -- | Number of auxiliary buffers.
+  | AuxBuffers Int
+  -- | Specify if stereo rendering should be supported.
+  | Stereo Bool
+  -- | Specify whether the window can be resized by the user.
+  | NoResize Bool
+  -- | Number of samples to use for the multisampling buffer.
+  | FSAASamples Int
+  -- | Major number of the desired minimum OpenGL version.
+  | OpenGLVersionMajor Int
+  -- | Minor number of the desired minimum OpenGL version.
+  | OpenGLVersionMinor Int
+  -- | Specify whether the OpenGL context should be forward-compatible (i.e. disallow legacy functionality).
+  --   This should only be used when requesting OpenGL version 3.0 or above.
+  | OpenGLForwardCompat Bool
+  -- | Specify whether a debug context should be created.
+  | OpenGLDebugContext Bool
+  -- | The OpenGL profile the context should implement, or zero to let the system choose.
+  --   For available profiles see 'Profile'.
+  | OpenGLProfile Profile
   deriving (Eq, Show)
 
-instance Enum WindowHint where
-  fromEnum RefreshRate         = 0x0002000B
-  fromEnum AccumRedBits        = 0x0002000C
-  fromEnum AccumGreenBits      = 0x0002000D
-  fromEnum AccumBlueBits       = 0x0002000E
-  fromEnum AccumAlphaButs      = 0x0002000F
-  fromEnum AuxBuffers          = 0x00020010
-  fromEnum Stereo              = 0x00020011
-  fromEnum NoResize            = 0x00020012
-  fromEnum FSAASamples         = 0x00020013
-  fromEnum OpenGLVersionMajor  = 0x00020014
-  fromEnum OpenGLVersionMinor  = 0x00020015
-  fromEnum OpenGLForwardCompat = 0x00020016
-  fromEnum OpenGLDebugContext  = 0x00020017
-  fromEnum OpenGLProfile       = 0x00020018
-  toEnum 0x0002000B = RefreshRate
-  toEnum 0x0002000C = AccumRedBits
-  toEnum 0x0002000D = AccumGreenBits
-  toEnum 0x0002000E = AccumBlueBits
-  toEnum 0x0002000F = AccumAlphaButs
-  toEnum 0x00020010 = AuxBuffers
-  toEnum 0x00020011 = Stereo
-  toEnum 0x00020012 = NoResize
-  toEnum 0x00020013 = FSAASamples
-  toEnum 0x00020014 = OpenGLVersionMajor
-  toEnum 0x00020015 = OpenGLVersionMinor
-  toEnum 0x00020016 = OpenGLForwardCompat
-  toEnum 0x00020017 = OpenGLDebugContext
-  toEnum 0x00020018 = OpenGLProfile
-  toEnum _          = error "GLFW: WindowHint toEnum out of bounds"
+-- | OpenGL profiles, used in 'openWindowHint' with 'OpenGLProfile'.
+data Profile
+  = DefaultProfile
+  | OpenGLCoreProfile
+  | OpenGLCompatProfile
+  deriving (Eq, Show)
+  
+instance Enum Profile where
+  fromEnum DefaultProfile      = 0
+  fromEnum OpenGLCoreProfile   = 0x00050001
+  fromEnum OpenGLCompatProfile = 0x00050002
+  toEnum 0          = DefaultProfile
+  toEnum 0x00050001 = OpenGLCoreProfile
+  toEnum 0x00050002 = OpenGLCompatProfile
+  toEnum _          = error "GLFW: Profile toEnum out of bounds"
 
 -- | Window parameters used in gettable variable 'windowParam'.
 data WindowParam
@@ -597,9 +600,22 @@ foreign import ccall unsafe "glfwCloseWindow" closeWindow :: IO ()
 
 -- | Set the window hints, i.e., additional window properties, before
 --   openWindow.
-openWindowHint :: GL.SettableStateVar (WindowHint, Int)
+openWindowHint :: GL.SettableStateVar WindowHint
 openWindowHint = GL.makeSettableStateVar setter
-  where setter (hint, val) = glfwOpenWindowHint (fromEnum hint) val
+  where setter (RefreshRate val)         = glfwOpenWindowHint 0x0002000B val
+        setter (AccumRedBits val)        = glfwOpenWindowHint 0x0002000C val
+        setter (AccumGreenBits val)      = glfwOpenWindowHint 0x0002000D val
+        setter (AccumBlueBits val)       = glfwOpenWindowHint 0x0002000E val
+        setter (AccumAlphaBits val)      = glfwOpenWindowHint 0x0002000F val
+        setter (AuxBuffers val)          = glfwOpenWindowHint 0x00020010 val
+        setter (Stereo val)              = glfwOpenWindowHint 0x00020011 (fromEnum val)
+        setter (NoResize val)            = glfwOpenWindowHint 0x00020012 (fromEnum val)
+        setter (FSAASamples val)         = glfwOpenWindowHint 0x00020013 val
+        setter (OpenGLVersionMajor val)  = glfwOpenWindowHint 0x00020014 (fromEnum val)
+        setter (OpenGLVersionMinor val)  = glfwOpenWindowHint 0x00020015 (fromEnum val)
+        setter (OpenGLForwardCompat val) = glfwOpenWindowHint 0x00020016 (fromEnum val)
+        setter (OpenGLDebugContext val)  = glfwOpenWindowHint 0x00020017 (fromEnum val)
+        setter (OpenGLProfile val)       = glfwOpenWindowHint 0x00020018 (fromEnum val)
 
 foreign import ccall unsafe glfwOpenWindowHint :: Int -> Int -> IO ()
 
