@@ -1,5 +1,5 @@
 -- | Haskell Interface to GLFW (<http://glfw.sourceforge.net>).
---   Supports GLFW API version 2.6.
+--   Supports GLFW API version 2.7.2.
 
 {-# LANGUAGE CPP, ExistentialQuantification, ForeignFunctionInterface #-}
 
@@ -29,12 +29,11 @@ module Graphics.UI.GLFW
   , MouseButtonCallback
   , MousePosCallback
   , MouseWheelCallback
-    -- * Initialization and window functions
+    -- * Initialization and Termination
   , initialize
   , terminate
-  , videoModes
-  , desktopMode
   , version
+    -- * Window Handling
   , openWindow
   , openWindowHint
   , closeWindow
@@ -46,14 +45,17 @@ module Graphics.UI.GLFW
   , swapBuffers
   , swapInterval
   , windowParam
-  , joystickParam
-    -- * Event handling
+    -- * Video Modes
+  , videoModes
+  , desktopMode
+    -- * Input Handling
   , pollEvents
   , waitEvents
   , getKey
   , getMouseButton
   , mousePos
   , mouseWheel
+  , joystickParam
   , joystickPos
   , joystickPos'
   , joystickButtons
@@ -62,23 +64,26 @@ module Graphics.UI.GLFW
   , windowSizeCallback
   , windowCloseCallback
   , windowRefreshCallback
-    -- ** Event callbacks
+    -- ** Input callbacks
   , keyCallback
   , charCallback
   , mouseButtonCallback
   , mousePosCallback
   , mouseWheelCallback
-    -- * Other
+    -- * Timing
   , time
   , sleep
+    -- * OpenGL Extension Support
   , extensionSupported
-  , enableSpecial
-  , disableSpecial
+  , glVersion
     -- * Texture loading
   , loadTexture2D
   , loadMemoryTexture2D
     -- * Text rendering
   , renderString
+    -- * Miscellaneous
+  , enableSpecial
+  , disableSpecial
     -- * GLFW thread support functions purposefully omitted
   ) where
 
@@ -119,6 +124,8 @@ instance Enum WindowMode where
 data WindowHint
   -- | Vertical monitor refresh rate in Hz (only used for fullscreen windows).
   --   Zero means system default.
+  --   Use with caution: specifying a refresh rate can override the system's settings,
+  --   in which case the display may be suboptimal, fail or even damage the monitor.
   = RefreshRate Int
   -- | Number of bits for the red channel of the accumulation buffer.
   | AccumRedBits Int
@@ -131,6 +138,8 @@ data WindowHint
   -- | Number of auxiliary buffers.
   | AuxBuffers Int
   -- | Specify if stereo rendering should be supported.
+  --   If 'Stereo' is requested on a call to 'openWindowHint', but no stereo rendering pixel
+  --   formats / framebuffer configs are available, 'openWindow' will fail.
   | Stereo Bool
   -- | Specify whether the window can be resized by the user.
   | NoResize Bool
@@ -145,7 +154,7 @@ data WindowHint
   | OpenGLForwardCompat Bool
   -- | Specify whether a debug context should be created.
   | OpenGLDebugContext Bool
-  -- | The OpenGL profile the context should implement, or zero to let the system choose.
+  -- | The OpenGL profile the context should implement.
   --   For available profiles see 'Profile'.
   | OpenGLProfile Profile
   deriving (Eq, Show)
@@ -531,8 +540,11 @@ instance Enum Joystick where
 
 -- | Joystick parameters
 data JoystickParam
+  -- | Indicates whether the joystick is present.
   = Present
+  -- | Number of axes supported by the joystick.
   | Axes
+  -- | Number of buttons supported by the joystick.
   | Buttons
   deriving (Eq, Show)
 
@@ -547,11 +559,24 @@ instance Enum JoystickParam where
 
 -- | Special features used in 'enableSpecial' and 'disableSpecial'.
 data SpecialFeature
+  -- | When enabled, the mouse cursor is visible and mouse coordinates are relative to the
+  --   upper left corner of the client area of the GLFW window. The coordinates are limited
+  --   to the client area of the window.
   = MouseCursor
+  -- | When enabled, keys which are pressed will not be released until they are physically
+  --   released and checked with 'getKey'.
   | StickyKey
+  -- | When enabled, mouse buttons which are pressed will not be released until they are
+  --   physically released and checked with 'getMouseButton'.
   | StickyMouseButton
+  -- | When enabled, pressing standard system key combinations, such as ALT+TAB under Windows,
+  --   will give the normal behavior.
   | SystemKey
+  -- | When enabled, the key and character callback functions are called repeatedly when a
+  --   key is held down long enough (according to the system key repeat configuration).
   | KeyRepeat
+  -- | When enabled, 'pollEvents' is automatically called each time 'swapBuffers' is called,
+  --   immediately after the buffer swap itself.
   | AutoPollEvent
   deriving (Eq, Show)
 
@@ -572,9 +597,14 @@ instance Enum SpecialFeature where
 
 -- | Texture flag used in 'loadTexture2D' and 'loadMemoryTexture2D'.
 data TextureFlag
+  -- | Do not rescale to the closest 2^m x 2^n resolution.
   = NoRescale
+  -- | Specifies that the origin of the loaded image should be in the upper left corner
+  --   (default is the lower left corner).
   | OriginUL
+  -- | Automatically build and upload all mipmap levels.
   | BuildMipMaps
+  -- | Treat single component images as alpha maps rather than luminance maps.
   | AlphaMap
   deriving (Eq, Show)
 
@@ -646,6 +676,19 @@ foreign import ccall unsafe glfwGetVersion :: Ptr Int -> Ptr Int -> Ptr Int -> I
 
 -- | Open a window. Returns 'True' if successful, 'False' otherwise. GLFW
 --   applications can only open one window.
+--
+--   If width is zero and height is not, width will be calculated as width = 4/3 height.
+--
+--   If height is zero and width is not, height will be calculated as height = 3/4 width.
+--
+--   If both width and height are zero, width is set to 640 and height to 480.
+--
+--   Display bits default to 0 if no value is specified, meaning that particular buffer is not created.
+--
+--   In fullscreen mode a resolution that best matches the given window dimensions will be chosen.
+--
+--   In fullscreen mode the mouse cursor is hidden by default. To change the visibility of the mouse
+--   cursor, see, 'enableSpecial' and 'disableSpecial'.
 openWindow :: GL.Size -> [DisplayBits] -> WindowMode -> IO Bool
 openWindow (GL.Size w h) bits mode = do
   writeIORef fontTextures []
@@ -668,6 +711,8 @@ foreign import ccall unsafe "glfwCloseWindow" closeWindow :: IO ()
 
 -- | Set the window hints, i.e., additional window properties, before
 --   openWindow.
+--
+--   For a hint to take effect, 'openWindowHint' must be called /before/ calling 'openWindow'.
 openWindowHint :: GL.SettableStateVar WindowHint
 openWindowHint = GL.makeSettableStateVar setter
   where setter (RefreshRate val)         = glfwOpenWindowHint 0x0002000B val
@@ -695,6 +740,16 @@ windowTitle = GL.makeSettableStateVar setter
 foreign import ccall unsafe glfwSetWindowTitle :: CString -> IO ()
 
 -- | Get or set the size of the opened window.
+--
+--   The dimensions denote the size of the client area of the window (i.e. excluding any
+--   window borders and decorations).
+--
+--   If the window is in fullscreen mode when setting new dimensions, the video mode will
+--   be changed to a resolution that closest matches the given dimensions.
+--
+--   The setter has no effect if the window is iconified.
+--
+--   The OpenGL context is guaranteed to be preserved when the window is resized.
 windowSize :: GL.StateVar GL.Size
 windowSize = GL.makeStateVar getter setter
   where getter =
@@ -822,6 +877,9 @@ foreign import ccall unsafe glfwGetDesktopMode :: Ptr Int -> IO ()
 --   function, all window states, keyboard states and mouse states are updated.
 --   If any related callback functions are registered, these are called during
 --   the call of 'pollEvents'.
+--
+--   'pollEvents' is called implicitly from 'swapBuffers' if 'AutoPollEvent' is
+--   enabled (as it is by default).
 foreign import ccall "glfwPollEvents" pollEvents :: IO ()
 
 -- | Wait for events, such as user input and window events. The calling thread
@@ -832,6 +890,10 @@ foreign import ccall "glfwWaitEvents" waitEvents :: IO ()
 
 -- | Return a 'KeyButtonState', either 'Release' or 'Press', of the indicated
 --   key.
+--
+--   A window must be opened for the function to have any effect, and 'pollEvents',
+--   'waitEvents' or 'swapBuffers' (with 'AutoPollEvent' enabled) must be called
+--   before any keyboard events are recorded and reported by 'getKey'.
 getKey :: Enum a => a -> IO KeyButtonState
 getKey = fmap toEnum . glfwGetKey . fromEnum
 
@@ -839,12 +901,26 @@ foreign import ccall unsafe glfwGetKey :: Int -> IO Int
 
 -- | Return a 'KeyButtonState', either 'Release' or 'Press', of the indicated
 --   mouse button.
+--
+--   A window must be opened for the function to have any effect, and 'pollEvents',
+--   'waitEvents' or 'swapBuffers' (with 'AutoPollEvent' enabled) must be called
+--   before any mouse events are recorded and reported by 'getMouseButton'.
 getMouseButton :: MouseButton -> IO KeyButtonState
 getMouseButton = fmap toEnum . glfwGetMouseButton . fromEnum
 
 foreign import ccall unsafe glfwGetMouseButton :: Int -> IO Int
 
 -- | Set or get the mouse position.
+--
+--   A window must be opened for the getter to have any effect, and 'pollEvents',
+--   'waitEvents' or 'swapBuffers' (with 'AutoPollEvent' enabled) must be called
+--   before any mouse movements are recorded and reported by 'mousePos'.
+--
+--   When setting the mouse position, if the cursor is visible (not disabled), the
+--   cursor will be moved to the specified position, relative to the upper left
+--   corner of the window client area and with the Y-axis down. If the cursor is
+--   hidden (disabled), only the mouse position that is reported by the getter is
+--   changed.
 mousePos :: GL.StateVar GL.Position
 mousePos = GL.makeStateVar getter setter
   where
@@ -859,6 +935,10 @@ foreign import ccall unsafe glfwGetMousePos :: Ptr Int -> Ptr Int -> IO ()
 foreign import ccall unsafe glfwSetMousePos :: Int -> Int -> IO ()
 
 -- | Set or get the mouse wheel position.
+--
+--   A window must be opened for the getter to have any effect, and 'pollEvents',
+--   'waitEvents' or 'swapBuffers' (with 'AutoPollEvent' enabled) must be called
+--   before any wheel movements are recorded and reported by 'mouseWheel'.
 mouseWheel :: GL.StateVar Int
 mouseWheel = GL.makeStateVar glfwGetMouseWheel glfwSetMouseWheel
 
@@ -866,6 +946,10 @@ foreign import ccall unsafe glfwGetMouseWheel :: IO Int
 foreign import ccall unsafe glfwSetMouseWheel :: Int -> IO ()
 
 -- | Get joystick parameters.
+--
+--   The joystick information is updated every time the getter is queried.
+--
+--   No window has to be opened for joystick information to be available.
 joystickParam :: Joystick -> JoystickParam -> GL.GettableStateVar Int
 joystickParam j param = GL.makeGettableStateVar (glfwGetJoystickParam (fromEnum j) (fromEnum param))
 
@@ -874,6 +958,10 @@ foreign import ccall unsafe glfwGetJoystickParam :: Int -> Int -> IO Int
 -- | Get a certain number of axis positions for the given joystick. If the
 --   number of positions requested is is greater than the number available, the
 --   unavailable positions will be 0.
+--
+--   The joystick state is updated every time the getter is queried.
+--
+--   No window has to be opened for joystick input to be available.
 joystickPos :: Joystick -> Int -> GL.GettableStateVar [Float]
 joystickPos j n = GL.makeGettableStateVar $
   withArray (replicate n 0) $ \a -> do
@@ -882,6 +970,10 @@ joystickPos j n = GL.makeGettableStateVar $
 
 -- | Get joystick positions. The returned list contains the positions
 --   for all available axes for the given joystick.
+--
+--   The joystick state is updated every time the getter is queried.
+--
+--   No window has to be opened for joystick input to be available.
 joystickPos' :: Joystick -> GL.GettableStateVar [Float]
 joystickPos' j = GL.makeGettableStateVar $ do
   n <- glfwGetJoystickParam (fromEnum j) (fromEnum Axes)
@@ -893,6 +985,10 @@ foreign import ccall unsafe glfwGetJoystickPos :: Int -> Ptr Float -> Int -> IO 
 
 -- | Get joystick button states. The returned list contains the states
 --   for all available buttons for the given joystick.
+--
+--   The joystick state is updated every time the getter is queried.
+--
+--   No window has to be opened for joystick input to be available.
 joystickButtons :: Joystick -> GL.GettableStateVar [KeyButtonState]
 joystickButtons j = GL.makeGettableStateVar $ do
   n <- glfwGetJoystickParam (fromEnum j) (fromEnum Buttons)
@@ -1017,6 +1113,8 @@ foreign import ccall glfwSetMouseWheelCallback :: FunPtr GLFWmousewheelfun -> IO
 --
 --   Unless the timer has been set by the programmer, the time is measured as
 --   the number of seconds that have passed since 'initialize' was called.
+--
+--   The resolution of the timer depends on which system the program is running on.
 time :: GL.StateVar Double
 time = GL.makeStateVar glfwGetTime glfwSetTime
 
@@ -1035,6 +1133,20 @@ extensionSupported :: String -> IO Bool
 extensionSupported = liftM toEnum . flip withCString glfwExtensionSupported
 
 foreign import ccall unsafe glfwExtensionSupported :: CString -> IO Int
+
+-- | Returns the version numbers for the currently used OpenGL implementation.
+glVersion :: GL.GettableStateVar Version
+glVersion = GL.makeGettableStateVar $
+  with 0 $ \x ->
+  with 0 $ \y ->
+  with 0 $ \z -> do
+    glfwGetGLVersion x y z
+    x' <- peek x
+    y' <- peek y
+    z' <- peek z
+    return (x', y', z')
+    
+foreign import ccall unsafe glfwGetGLVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
 
 -- TODO:
 -- foreign import ccall unsafe glfwGetProcAddress :: Ptr CChar -> FunPtr ?
