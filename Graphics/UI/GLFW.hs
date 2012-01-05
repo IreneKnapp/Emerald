@@ -40,6 +40,7 @@ module Graphics.UI.GLFW
   , closeWindow
   , windowTitle
   , windowSize
+  , windowPos
   , iconifyWindow
   , restoreWindow
   , swapBuffers
@@ -705,6 +706,16 @@ windowSize = GL.makeStateVar getter setter
 
 foreign import ccall unsafe glfwGetWindowSize :: Ptr Int -> Ptr Int -> IO ()
 foreign import ccall unsafe glfwSetWindowSize :: Int -> Int -> IO ()
+
+-- | Set the position of the opened window.
+--
+--   The setter has no effect in fullscreen mode or if the window is iconified.
+--
+--   On multi-monitor systems, the behavior of the setter is ill-defined.
+windowPos :: GL.SettableStateVar GL.Position
+windowPos = GL.makeSettableStateVar $ \(GL.Position x y) -> glfwSetWindowPos x y
+
+foreign import ccall unsafe glfwSetWindowPos :: GL.GLint -> GL.GLint -> IO ()
 
 -- | Iconify the window.
 foreign import ccall unsafe "glfwIconifyWindow" iconifyWindow :: IO ()
