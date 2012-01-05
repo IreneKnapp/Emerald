@@ -167,39 +167,106 @@ instance Enum Profile where
 
 -- | Window parameters used in gettable variable 'windowParam'.
 data WindowParam
-  = Opened
-  | Active
-  | Iconified
-  | Accelerated
-  | RedBits
-  | GreenBits
-  | BlueBits
-  | AlphaBits
-  | DepthBits
-  | StencilBits
+  -- | Indicates whether the window is opened.
+  = POpened
+  -- | Indicates whether the window is active.
+  | PActive
+  -- | Indicates whether the window is iconified.
+  | PIconified
+  -- | Indicates whether the window is hardware accelerated.
+  | PAccelerated
+  -- | Number of bits for the red color component.
+  | PRedBits
+  -- | Number of bits for the green color component.
+  | PGreenBits
+  -- | Number of bits for the blue color component.
+  | PBlueBits
+  -- | Number of bits for the alpha buffer.
+  | PAlphaBits
+  -- | Number of bits for the depth buffer.
+  | PDepthBits
+  -- | Number of bits for the stencil buffer.
+  | PStencilBits
+  -- | Vertical monitor refresh rate in Hz (only used for fullscreen windows).
+  --   Zero means system default.
+  | PRefreshRate
+  -- | Number of bits for the red channel of the accumulation buffer.
+  | PAccumRedBits
+  -- | Number of bits for the green channel of the accumulation buffer.
+  | PAccumGreenBits
+  -- | Number of bits for the blue channel of the accumulation buffer.
+  | PAccumBlueBits
+  -- | Number of bits for the alpha channel of the accumulation buffer.
+  | PAccumAlphaBits
+  -- | Number of auxiliary buffers.
+  | PAuxBuffers
+  -- | Indicates whether stereo rendering is supported.
+  | PStereo
+  -- | Indicates whether the window can be resized by the user.
+  | PNoResize
+  -- | Number of multisampling buffer samples. Zero indicates multisampling is disabled.
+  | PFSAASamples
+  -- | Major number of the actual version of the context.
+  | POpenGLVersionMajor
+  -- | Minor number of the actual version of the context.
+  | POpenGLVersionMinor
+  -- | Indicates whether the context is forward compatible.
+  | POpenGLForwardCompat
+  -- | Indicates whether the context is a debug context.
+  | POpenGLDebugContext
+  -- | The profile implemented by the context.
+  | POpenGLProfile
   deriving (Eq, Show)
 
 instance Enum WindowParam where
-  fromEnum Opened      = 0x00020001
-  fromEnum Active      = 0x00020002
-  fromEnum Iconified   = 0x00020003
-  fromEnum Accelerated = 0x00020004
-  fromEnum RedBits     = 0x00020005
-  fromEnum GreenBits   = 0x00020006
-  fromEnum BlueBits    = 0x00020007
-  fromEnum AlphaBits   = 0x00020008
-  fromEnum DepthBits   = 0x00020009
-  fromEnum StencilBits = 0x0002000A
-  toEnum 0x00020001 = Opened
-  toEnum 0x00020002 = Active
-  toEnum 0x00020003 = Iconified
-  toEnum 0x00020004 = Accelerated
-  toEnum 0x00020005 = RedBits
-  toEnum 0x00020006 = GreenBits
-  toEnum 0x00020007 = BlueBits
-  toEnum 0x00020008 = AlphaBits
-  toEnum 0x00020009 = DepthBits
-  toEnum 0x0002000A = StencilBits
+  fromEnum POpened              = 0x00020001
+  fromEnum PActive              = 0x00020002
+  fromEnum PIconified           = 0x00020003
+  fromEnum PAccelerated         = 0x00020004
+  fromEnum PRedBits             = 0x00020005
+  fromEnum PGreenBits           = 0x00020006
+  fromEnum PBlueBits            = 0x00020007
+  fromEnum PAlphaBits           = 0x00020008
+  fromEnum PDepthBits           = 0x00020009
+  fromEnum PStencilBits         = 0x0002000A
+  fromEnum PRefreshRate         = 0x0002000B
+  fromEnum PAccumRedBits        = 0x0002000C
+  fromEnum PAccumGreenBits      = 0x0002000D
+  fromEnum PAccumBlueBits       = 0x0002000E
+  fromEnum PAccumAlphaBits      = 0x0002000F
+  fromEnum PAuxBuffers          = 0x00020010
+  fromEnum PStereo              = 0x00020011
+  fromEnum PNoResize            = 0x00020012
+  fromEnum PFSAASamples         = 0x00020013
+  fromEnum POpenGLVersionMajor  = 0x00020014
+  fromEnum POpenGLVersionMinor  = 0x00020015
+  fromEnum POpenGLForwardCompat = 0x00020016
+  fromEnum POpenGLDebugContext  = 0x00020017
+  fromEnum POpenGLProfile       = 0x00020018
+  toEnum 0x00020001 = POpened
+  toEnum 0x00020002 = PActive
+  toEnum 0x00020003 = PIconified
+  toEnum 0x00020004 = PAccelerated
+  toEnum 0x00020005 = PRedBits
+  toEnum 0x00020006 = PGreenBits
+  toEnum 0x00020007 = PBlueBits
+  toEnum 0x00020008 = PAlphaBits
+  toEnum 0x00020009 = PDepthBits
+  toEnum 0x0002000A = PStencilBits
+  toEnum 0x0002000B = PRefreshRate
+  toEnum 0x0002000C = PAccumRedBits
+  toEnum 0x0002000D = PAccumGreenBits
+  toEnum 0x0002000E = PAccumBlueBits
+  toEnum 0x0002000F = PAccumAlphaBits
+  toEnum 0x00020010 = PAuxBuffers
+  toEnum 0x00020011 = PStereo
+  toEnum 0x00020012 = PNoResize
+  toEnum 0x00020013 = PFSAASamples
+  toEnum 0x00020014 = POpenGLVersionMajor
+  toEnum 0x00020015 = POpenGLVersionMinor
+  toEnum 0x00020016 = POpenGLForwardCompat
+  toEnum 0x00020017 = POpenGLDebugContext
+  toEnum 0x00020018 = POpenGLProfile
   toEnum _          = error "GLFW: WindowParam toEnum out of bounds"
 
 -- | Video modes used in gettable variables 'videoModes' and 'desktopMode'.
