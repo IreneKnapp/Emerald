@@ -781,7 +781,7 @@ foreign import ccall unsafe "glfwRestoreWindow" restoreWindow :: IO ()
 -- | Swap the back and front color buffers of the window. If 'AutoPollEvent' is
 --   enabled by 'enableSpecial' (which is the default), it also polls for new
 --   events before the swapping.
-foreign import ccall "glfwSwapBuffers" swapBuffers :: IO ()
+foreign import ccall safe "glfwSwapBuffers" swapBuffers :: IO ()
 
 -- | Set the minimum number of monitor retraces between each each buffer swap
 --   performed by 'swapBuffers'. If set to zero, buffer swaps will not be
@@ -809,7 +809,7 @@ windowSizeCallback = GL.makeSettableStateVar (\f -> do
   glfwSetWindowSizeCallback ptr)
 
 -- glfwSetWindowSizeCallback executes the callback (see window.c), ccall cannot be marked unsafe
-foreign import ccall glfwSetWindowSizeCallback :: FunPtr GLFWwindowsizefun -> IO ()
+foreign import ccall safe glfwSetWindowSizeCallback :: FunPtr GLFWwindowsizefun -> IO ()
 
 -- | Callback type for 'windowCloseCallback'.
 type WindowCloseCallback = IO Bool
@@ -821,7 +821,7 @@ windowCloseCallback = GL.makeSettableStateVar (\f -> do
   glfwSetCallbackIORef glfwWindowclosefun ptr
   glfwSetWindowCloseCallback ptr)
 
-foreign import ccall unsafe glfwSetWindowCloseCallback :: FunPtr GLFWwindowclosefun -> IO ()
+foreign import ccall safe glfwSetWindowCloseCallback :: FunPtr GLFWwindowclosefun -> IO ()
 
 -- | Callback type for 'windowRefreshCallback'.
 type WindowRefreshCallback = IO ()
@@ -880,13 +880,13 @@ foreign import ccall unsafe glfwGetDesktopMode :: Ptr Int -> IO ()
 --
 --   'pollEvents' is called implicitly from 'swapBuffers' if 'AutoPollEvent' is
 --   enabled (as it is by default).
-foreign import ccall "glfwPollEvents" pollEvents :: IO ()
+foreign import ccall safe "glfwPollEvents" pollEvents :: IO ()
 
 -- | Wait for events, such as user input and window events. The calling thread
 --   will be put to sleep until any event appears in the event queue.
 --   When events are ready, the events will be processed just as they are
 --   processed by 'pollEvents'.
-foreign import ccall "glfwWaitEvents" waitEvents :: IO ()
+foreign import ccall safe "glfwWaitEvents" waitEvents :: IO ()
 
 -- | Return a 'KeyButtonState', either 'Release' or 'Press', of the indicated
 --   key.
@@ -1078,7 +1078,7 @@ mousePosCallback = GL.makeSettableStateVar setter
       glfwSetMousePosCallback ptr
 
 -- glfwSetMousePosCallback executes the callback (see input.c), ccall cannot be marked unsafe
-foreign import ccall glfwSetMousePosCallback :: FunPtr GLFWmouseposfun -> IO ()
+foreign import ccall safe glfwSetMousePosCallback :: FunPtr GLFWmouseposfun -> IO ()
 
 -- | Callback type for 'mouseWheelCallback'.
 type MouseWheelCallback = Int -> IO ()
@@ -1106,7 +1106,7 @@ mouseWheelCallback  = GL.makeSettableStateVar setter
       glfwSetMouseWheelCallback ptr
 
 -- glfwSetMouseWheelCallback executes the callback (see input.c), ccall cannot be marked unsafe
-foreign import ccall glfwSetMouseWheelCallback :: FunPtr GLFWmousewheelfun -> IO ()
+foreign import ccall safe glfwSetMouseWheelCallback :: FunPtr GLFWmousewheelfun -> IO ()
 
 -- | Get or set the value of the high precision timer. The time is measured in
 --   seconds as a double precision floating point number.
