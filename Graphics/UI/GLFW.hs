@@ -638,7 +638,7 @@ _GLFW_INFINITY = 100000
 
 -- Callback function type
 type GLFWwindowsizefun    = Int -> Int -> IO ()
-type GLFWwindowclosefun   = IO ()
+type GLFWwindowclosefun   = IO Bool
 type GLFWwindowrefreshfun = IO ()
 type GLFWmousebuttonfun   = Int -> Int -> IO ()
 type GLFWmouseposfun      = Int -> Int -> IO ()
@@ -812,12 +812,12 @@ windowSizeCallback = GL.makeSettableStateVar (\f -> do
 foreign import ccall glfwSetWindowSizeCallback :: FunPtr GLFWwindowsizefun -> IO ()
 
 -- | Callback type for 'windowCloseCallback'.
-type WindowCloseCallback = IO ()
+type WindowCloseCallback = IO Bool
 
 -- | Set the function that will be called when the window is closed.
 windowCloseCallback :: GL.SettableStateVar WindowCloseCallback
 windowCloseCallback = GL.makeSettableStateVar (\f -> do
-  ptr <- glfwWrapFun0 f
+  ptr <- glfwWrapFunB f
   glfwSetCallbackIORef glfwWindowclosefun ptr
   glfwSetWindowCloseCallback ptr)
 
@@ -1229,6 +1229,7 @@ glfwCharfun          = unsafePerformIO (newIORef Nothing)
 
 foreign import ccall unsafe "wrapper" glfwWrapFun2 :: (Int -> Int -> IO ()) -> IO (FunPtr (Int -> Int -> IO ()))
 foreign import ccall unsafe "wrapper" glfwWrapFun1 :: (Int -> IO ()) -> IO (FunPtr (Int -> IO ()))
+foreign import ccall unsafe "wrapper" glfwWrapFunB :: IO Bool -> IO (FunPtr (IO Bool))
 foreign import ccall unsafe "wrapper" glfwWrapFun0 :: IO () -> IO (FunPtr (IO ()))
 
 glfwSetCallbackIORef :: forall a. IORef (Maybe (FunPtr a)) -> FunPtr a -> IO ()

@@ -116,7 +116,7 @@ active lines = loop waitForPress
             GLFW.sleep 0.001
 
             -- only continue when the window is not closed
-            windowOpenStatus <- get $ windowParam Opened
+            windowOpenStatus <- get $ windowParam POpened
             unless (windowOpenStatus == 0) $
               loop action' -- loop with next action
 
@@ -172,7 +172,7 @@ passive lines = do
         writeIORef quit True
      
   -- Terminate the program if the window is closed
-  GLFW.windowCloseCallback $= writeIORef quit True
+  GLFW.windowCloseCallback $= (writeIORef quit True >> return True)
 
   -- by default start with waitForPress
   waitForPress dirty
