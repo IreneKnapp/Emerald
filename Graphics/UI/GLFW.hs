@@ -1,16 +1,41 @@
 -- | Haskell Interface to GLFW (<http://glfw.sourceforge.net>).
 --   Supports GLFW API version 2.7.2.
 
-{-# LANGUAGE CPP, ExistentialQuantification, ForeignFunctionInterface #-}
+{-# LANGUAGE CPP, ExistentialQuantification, ForeignFunctionInterface, TypeFamilies #-}
 
 module Graphics.UI.GLFW
   ( -- * Data types
     Version
   , DisplayBits(..)
   , WindowMode(..)
-  , WindowHint(..)
+  , ParamVal
+  , Param(..)
+  , Hint(..)
+  , Opened(..)
+  , Active(..)
+  , Iconified(..)
+  , Accelerated(..)
+  , RedBits(..)
+  , GreenBits(..)
+  , BlueBits(..)
+  , AlphaBits(..)
+  , DepthBits(..)
+  , StencilBits(..)
+  , RefreshRate(..)
+  , AccumRedBits(..)
+  , AccumGreenBits(..)
+  , AccumBlueBits(..)
+  , AccumAlphaBits(..)
+  , AuxBuffers(..)
+  , Stereo(..)
+  , NoResize(..)
+  , FSAASamples(..)
+  , OpenGLVersionMajor(..)
+  , OpenGLVersionMinor(..)
+  , OpenGLForwardCompat(..)
+  , OpenGLDebugContext(..)
+  , OpenGLProfile(..)
   , Profile(..)
-  , WindowParam(..)
   , VideoMode(..)
   , KeyButtonState(..)
   , Key(..)
@@ -35,7 +60,6 @@ module Graphics.UI.GLFW
   , version
     -- * Window Handling
   , openWindow
-  , openWindowHint
   , closeWindow
   , windowTitle
   , windowSize
@@ -44,7 +68,6 @@ module Graphics.UI.GLFW
   , restoreWindow
   , swapBuffers
   , swapInterval
-  , windowParam
     -- * Video Modes
   , videoModes
   , desktopMode
@@ -119,45 +142,134 @@ instance Enum WindowMode where
   toEnum 0x00010001 = Window
   toEnum 0x00010002 = FullScreen
   toEnum _          = error "GLFW: WindowMode toEnum out of bounds"
+  
+type family ParamVal a
 
--- | Window hints, used in settable variable 'openWindowHint'.
-data WindowHint
-  -- | Vertical monitor refresh rate in Hz (only used for fullscreen windows).
-  --   Zero means system default.
-  --   Use with caution: specifying a refresh rate can override the system's settings,
-  --   in which case the display may be suboptimal, fail or even damage the monitor.
-  = RefreshRate Int
-  -- | Number of bits for the red channel of the accumulation buffer.
-  | AccumRedBits Int
-  -- | Number of bits for the green channel of the accumulation buffer.
-  | AccumGreenBits Int
-  -- | Number of bits for the blue channel of the accumulation buffer.
-  | AccumBlueBits Int
-  -- | Number of bits for the alpha channel of the accumulation buffer.
-  | AccumAlphaBits Int
-  -- | Number of auxiliary buffers.
-  | AuxBuffers Int
-  -- | Specify if stereo rendering should be supported.
-  --   If 'Stereo' is requested on a call to 'openWindowHint', but no stereo rendering pixel
-  --   formats / framebuffer configs are available, 'openWindow' will fail.
-  | Stereo Bool
-  -- | Specify whether the window can be resized by the user.
-  | NoResize Bool
-  -- | Number of samples to use for the multisampling buffer.
-  | FSAASamples Int
-  -- | Major number of the desired minimum OpenGL version.
-  | OpenGLVersionMajor Int
-  -- | Minor number of the desired minimum OpenGL version.
-  | OpenGLVersionMinor Int
-  -- | Specify whether the OpenGL context should be forward-compatible (i.e. disallow legacy functionality).
-  --   This should only be used when requesting OpenGL version 3.0 or above.
-  | OpenGLForwardCompat Bool
-  -- | Specify whether a debug context should be created.
-  | OpenGLDebugContext Bool
-  -- | The OpenGL profile the context should implement.
-  --   For available profiles see 'Profile'.
-  | OpenGLProfile Profile
-  deriving (Eq, Show)
+class Param a where
+    getParam :: a -> IO (ParamVal a)
+    
+class Param a => Hint a where
+    openWindowHint :: a -> ParamVal a -> IO ()
+    
+-- | 'ParamVal' 'Opened' = 'Bool'
+data Opened = Opened
+
+type instance ParamVal Opened = Bool
+
+-- | 'ParamVal' 'Active' = 'Bool'
+data Active = Active
+
+type instance ParamVal Active = Bool
+
+-- | 'ParamVal' 'Iconified' = 'Bool'
+data Iconified = Iconified
+
+type instance ParamVal Iconified = Bool
+
+-- | 'ParamVal' 'Accelerated' = 'Bool'
+data Accelerated = Accelerated
+
+type instance ParamVal Accelerated = Bool
+
+-- | 'ParamVal' 'RedBits' = 'Int'
+data RedBits = RedBits
+
+type instance ParamVal RedBits = Int
+
+-- | 'ParamVal' 'GreenBits' = 'Int'
+data GreenBits = GreenBits
+
+type instance ParamVal GreenBits = Int
+
+-- | 'ParamVal' 'BlueBits' = 'Int'
+data BlueBits = BlueBits
+
+type instance ParamVal BlueBits = Int
+
+-- | 'ParamVal' 'AlphaBits' = 'Int'
+data AlphaBits = AlphaBits
+
+type instance ParamVal AlphaBits = Int
+
+-- | 'ParamVal' 'DepthBits' = 'Int'
+data DepthBits = DepthBits
+
+type instance ParamVal DepthBits = Int
+
+-- | 'ParamVal' 'StencilBits' = 'Int'
+data StencilBits = StencilBits
+
+type instance ParamVal StencilBits = Int
+    
+-- | 'ParamVal' 'RefreshRate' = 'Int'
+data RefreshRate = RefreshRate
+
+type instance ParamVal RefreshRate = Int
+
+-- | 'ParamVal' 'AccumRedBits' = 'Int'
+data AccumRedBits = AccumRedBits
+
+type instance ParamVal AccumRedBits = Int
+
+-- | 'ParamVal' 'AccumGreenBits' = 'Int'
+data AccumGreenBits = AccumGreenBits
+
+type instance ParamVal AccumGreenBits = Int
+
+-- | 'ParamVal' 'AccumBlueBits' = 'Int'
+data AccumBlueBits = AccumBlueBits
+
+type instance ParamVal AccumBlueBits = Int
+
+-- | 'ParamVal' 'AccumAlphaBits' = 'Int'
+data AccumAlphaBits = AccumAlphaBits
+
+type instance ParamVal AccumAlphaBits = Int
+
+-- | 'ParamVal' 'AuxBuffers' = 'Int'
+data AuxBuffers = AuxBuffers
+
+type instance ParamVal AuxBuffers = Int
+
+-- | 'ParamVal' 'Stereo' = 'Bool'
+data Stereo = Stereo
+
+type instance ParamVal Stereo = Bool
+
+-- | 'ParamVal' 'NoResize' = 'Bool'
+data NoResize = NoResize
+
+type instance ParamVal NoResize = Bool
+
+-- | 'ParamVal' 'FSAASamples' = 'Int'
+data FSAASamples = FSAASamples
+
+type instance ParamVal FSAASamples = Int
+
+-- | 'ParamVal' 'OpenGLVersionMajor' = 'Int'
+data OpenGLVersionMajor = OpenGLVersionMajor
+
+type instance ParamVal OpenGLVersionMajor = Int
+
+-- | 'ParamVal' 'OpenGLVersionMinor' = 'Int'
+data OpenGLVersionMinor = OpenGLVersionMinor
+
+type instance ParamVal OpenGLVersionMinor = Int
+
+-- | 'ParamVal' 'OpenGLForwardCompat' = 'Bool'
+data OpenGLForwardCompat = OpenGLForwardCompat
+
+type instance ParamVal OpenGLForwardCompat = Bool
+
+-- | 'ParamVal' 'OpenGLDebugContext' = 'Bool'
+data OpenGLDebugContext = OpenGLDebugContext
+
+type instance ParamVal OpenGLDebugContext = Bool
+
+-- | 'ParamVal' 'OpenGLProfile' = 'Profile'
+data OpenGLProfile = OpenGLProfile
+
+type instance ParamVal OpenGLProfile = Profile
 
 -- | OpenGL profiles, used in 'openWindowHint' with 'OpenGLProfile'.
 data Profile
@@ -174,110 +286,6 @@ instance Enum Profile where
   toEnum 0x00050001 = OpenGLCoreProfile
   toEnum 0x00050002 = OpenGLCompatProfile
   toEnum _          = error "GLFW: Profile toEnum out of bounds"
-
--- | Window parameters used in gettable variable 'windowParam'.
-data WindowParam
-  -- | Indicates whether the window is opened.
-  = POpened
-  -- | Indicates whether the window is active.
-  | PActive
-  -- | Indicates whether the window is iconified.
-  | PIconified
-  -- | Indicates whether the window is hardware accelerated.
-  | PAccelerated
-  -- | Number of bits for the red color component.
-  | PRedBits
-  -- | Number of bits for the green color component.
-  | PGreenBits
-  -- | Number of bits for the blue color component.
-  | PBlueBits
-  -- | Number of bits for the alpha buffer.
-  | PAlphaBits
-  -- | Number of bits for the depth buffer.
-  | PDepthBits
-  -- | Number of bits for the stencil buffer.
-  | PStencilBits
-  -- | Vertical monitor refresh rate in Hz (only used for fullscreen windows).
-  --   Zero means system default.
-  | PRefreshRate
-  -- | Number of bits for the red channel of the accumulation buffer.
-  | PAccumRedBits
-  -- | Number of bits for the green channel of the accumulation buffer.
-  | PAccumGreenBits
-  -- | Number of bits for the blue channel of the accumulation buffer.
-  | PAccumBlueBits
-  -- | Number of bits for the alpha channel of the accumulation buffer.
-  | PAccumAlphaBits
-  -- | Number of auxiliary buffers.
-  | PAuxBuffers
-  -- | Indicates whether stereo rendering is supported.
-  | PStereo
-  -- | Indicates whether the window can be resized by the user.
-  | PNoResize
-  -- | Number of multisampling buffer samples. Zero indicates multisampling is disabled.
-  | PFSAASamples
-  -- | Major number of the actual version of the context.
-  | POpenGLVersionMajor
-  -- | Minor number of the actual version of the context.
-  | POpenGLVersionMinor
-  -- | Indicates whether the context is forward compatible.
-  | POpenGLForwardCompat
-  -- | Indicates whether the context is a debug context.
-  | POpenGLDebugContext
-  -- | The profile implemented by the context.
-  | POpenGLProfile
-  deriving (Eq, Show)
-
-instance Enum WindowParam where
-  fromEnum POpened              = 0x00020001
-  fromEnum PActive              = 0x00020002
-  fromEnum PIconified           = 0x00020003
-  fromEnum PAccelerated         = 0x00020004
-  fromEnum PRedBits             = 0x00020005
-  fromEnum PGreenBits           = 0x00020006
-  fromEnum PBlueBits            = 0x00020007
-  fromEnum PAlphaBits           = 0x00020008
-  fromEnum PDepthBits           = 0x00020009
-  fromEnum PStencilBits         = 0x0002000A
-  fromEnum PRefreshRate         = 0x0002000B
-  fromEnum PAccumRedBits        = 0x0002000C
-  fromEnum PAccumGreenBits      = 0x0002000D
-  fromEnum PAccumBlueBits       = 0x0002000E
-  fromEnum PAccumAlphaBits      = 0x0002000F
-  fromEnum PAuxBuffers          = 0x00020010
-  fromEnum PStereo              = 0x00020011
-  fromEnum PNoResize            = 0x00020012
-  fromEnum PFSAASamples         = 0x00020013
-  fromEnum POpenGLVersionMajor  = 0x00020014
-  fromEnum POpenGLVersionMinor  = 0x00020015
-  fromEnum POpenGLForwardCompat = 0x00020016
-  fromEnum POpenGLDebugContext  = 0x00020017
-  fromEnum POpenGLProfile       = 0x00020018
-  toEnum 0x00020001 = POpened
-  toEnum 0x00020002 = PActive
-  toEnum 0x00020003 = PIconified
-  toEnum 0x00020004 = PAccelerated
-  toEnum 0x00020005 = PRedBits
-  toEnum 0x00020006 = PGreenBits
-  toEnum 0x00020007 = PBlueBits
-  toEnum 0x00020008 = PAlphaBits
-  toEnum 0x00020009 = PDepthBits
-  toEnum 0x0002000A = PStencilBits
-  toEnum 0x0002000B = PRefreshRate
-  toEnum 0x0002000C = PAccumRedBits
-  toEnum 0x0002000D = PAccumGreenBits
-  toEnum 0x0002000E = PAccumBlueBits
-  toEnum 0x0002000F = PAccumAlphaBits
-  toEnum 0x00020010 = PAuxBuffers
-  toEnum 0x00020011 = PStereo
-  toEnum 0x00020012 = PNoResize
-  toEnum 0x00020013 = PFSAASamples
-  toEnum 0x00020014 = POpenGLVersionMajor
-  toEnum 0x00020015 = POpenGLVersionMinor
-  toEnum 0x00020016 = POpenGLForwardCompat
-  toEnum 0x00020017 = POpenGLDebugContext
-  toEnum 0x00020018 = POpenGLProfile
-  toEnum _          = error "GLFW: WindowParam toEnum out of bounds"
 
 -- | Video modes used in gettable variables 'videoModes' and 'desktopMode'.
 data VideoMode = VideoMode
@@ -709,26 +717,66 @@ foreign import ccall unsafe glfwOpenWindow :: Int -> Int -> Int -> Int -> Int ->
 -- | Close the open window and destroy the associated OpenGL context.
 foreign import ccall unsafe "glfwCloseWindow" closeWindow :: IO ()
 
--- | Set the window hints, i.e., additional window properties, before
---   openWindow.
---
---   For a hint to take effect, 'openWindowHint' must be called /before/ calling 'openWindow'.
-openWindowHint :: GL.SettableStateVar WindowHint
-openWindowHint = GL.makeSettableStateVar setter
-  where setter (RefreshRate val)         = glfwOpenWindowHint 0x0002000B val
-        setter (AccumRedBits val)        = glfwOpenWindowHint 0x0002000C val
-        setter (AccumGreenBits val)      = glfwOpenWindowHint 0x0002000D val
-        setter (AccumBlueBits val)       = glfwOpenWindowHint 0x0002000E val
-        setter (AccumAlphaBits val)      = glfwOpenWindowHint 0x0002000F val
-        setter (AuxBuffers val)          = glfwOpenWindowHint 0x00020010 val
-        setter (Stereo val)              = glfwOpenWindowHint 0x00020011 (fromEnum val)
-        setter (NoResize val)            = glfwOpenWindowHint 0x00020012 (fromEnum val)
-        setter (FSAASamples val)         = glfwOpenWindowHint 0x00020013 val
-        setter (OpenGLVersionMajor val)  = glfwOpenWindowHint 0x00020014 (fromEnum val)
-        setter (OpenGLVersionMinor val)  = glfwOpenWindowHint 0x00020015 (fromEnum val)
-        setter (OpenGLForwardCompat val) = glfwOpenWindowHint 0x00020016 (fromEnum val)
-        setter (OpenGLDebugContext val)  = glfwOpenWindowHint 0x00020017 (fromEnum val)
-        setter (OpenGLProfile val)       = glfwOpenWindowHint 0x00020018 (fromEnum val)
+-- | Vertical monitor refresh rate in Hz (only used for fullscreen windows).
+--   Zero means system default. Use with caution: specifying a refresh rate can override the system's settings,
+--   in which case the display may be suboptimal, fail or even damage the monitor.
+instance Hint RefreshRate where
+    openWindowHint RefreshRate val = glfwOpenWindowHint 0x0002000B val
+    
+-- | Specify the number of bits for the red channel of the accumulation buffer.
+instance Hint AccumRedBits where
+    openWindowHint AccumRedBits val = glfwOpenWindowHint 0x0002000C val
+    
+-- | Specify the number of bits for the green channel of the accumulation buffer.
+instance Hint AccumGreenBits where
+    openWindowHint AccumGreenBits val = glfwOpenWindowHint 0x0002000D val
+    
+-- | Specify the number of bits for the blue channel of the accumulation buffer.
+instance Hint AccumBlueBits where
+    openWindowHint AccumBlueBits val = glfwOpenWindowHint 0x0002000E val
+    
+-- | Specify the number of bits for the alpha channel of the accumulation buffer.
+instance Hint AccumAlphaBits where
+    openWindowHint AccumAlphaBits val = glfwOpenWindowHint 0x0002000F val
+
+-- | Specify the number of auxiliary buffers.
+instance Hint AuxBuffers where
+    openWindowHint AuxBuffers val = glfwOpenWindowHint 0x00020010 val
+    
+-- | Specify if stereo rendering should be supported.
+--   If Stereo is requested on a call to 'openWindowHint', but no stereo rendering pixel formats / framebuffer
+--   configs are available, 'openWindow' will fail.
+instance Hint Stereo where
+    openWindowHint Stereo val = glfwOpenWindowHint 0x00020011 (fromEnum val)
+
+-- | Specify whether the window can be resized by the user.
+instance Hint NoResize where
+    openWindowHint NoResize val = glfwOpenWindowHint 0x00020012 (fromEnum val)
+    
+-- | Specify the number of samples to use for the multisampling buffer.
+instance Hint FSAASamples where
+    openWindowHint FSAASamples val = glfwOpenWindowHint 0x00020013 val
+    
+-- | Specify the major number of the desired minimum OpenGL version.
+instance Hint OpenGLVersionMajor where
+    openWindowHint OpenGLVersionMajor val = glfwOpenWindowHint 0x00020014 val
+    
+-- | Specify the minor number of the desired minimum OpenGL version.
+instance Hint OpenGLVersionMinor where
+    openWindowHint OpenGLVersionMinor val = glfwOpenWindowHint 0x00020015 val
+
+-- | Specify whether the OpenGL context should be forward-compatible (i.e. disallow legacy functionality).
+--   This should only be used when requesting OpenGL version 3.0 or above.
+instance Hint OpenGLForwardCompat where
+    openWindowHint OpenGLForwardCompat val = glfwOpenWindowHint 0x00020016 (fromEnum val)
+   
+-- | Specify whether a debug context should be created.
+instance Hint OpenGLDebugContext where
+    openWindowHint OpenGLDebugContext val = glfwOpenWindowHint 0x00020017 (fromEnum val)
+    
+-- | Specify the OpenGL profile the context should implement. For available profiles see 'Profile'.
+instance Hint OpenGLProfile where
+    openWindowHint OpenGLProfile val = glfwOpenWindowHint 0x00020018 (fromEnum val)
 
 foreign import ccall unsafe glfwOpenWindowHint :: Int -> Int -> IO ()
 
@@ -791,9 +839,101 @@ swapInterval = GL.makeSettableStateVar glfwSwapInterval
 
 foreign import ccall unsafe glfwSwapInterval :: Int -> IO ()
 
--- | Get the value of window parameters.
-windowParam :: WindowParam -> GL.GettableStateVar Int
-windowParam = GL.makeGettableStateVar . glfwGetWindowParam . fromEnum
+-- | Query the window opened status.
+instance Param Opened where
+    getParam Opened = fmap toEnum $ glfwGetWindowParam 0x00020001
+
+-- | Query the window active status.
+instance Param Active where
+    getParam Active = fmap toEnum $ glfwGetWindowParam 0x00020002
+    
+-- | Query the window iconified status.
+instance Param Iconified where
+    getParam Iconified = fmap toEnum $ glfwGetWindowParam 0x00020003
+    
+-- | Query the window hardware accelerated status.
+instance Param Accelerated where
+    getParam Accelerated = fmap toEnum $ glfwGetWindowParam 0x00020004
+    
+-- | Query the number of bits for the red color component.
+instance Param RedBits where
+    getParam RedBits = glfwGetWindowParam 0x00020005
+    
+-- | Query the number of bits for the green color component.
+instance Param GreenBits where
+    getParam GreenBits = glfwGetWindowParam 0x00020006
+    
+-- | Query the number of bits for the blue color component.
+instance Param BlueBits where
+    getParam BlueBits = glfwGetWindowParam 0x00020007
+    
+-- | Query the number of bits for the alpha buffer.
+instance Param AlphaBits where
+    getParam AlphaBits = glfwGetWindowParam 0x00020008
+    
+-- | Query the number of bits for the depth buffer.
+instance Param DepthBits where
+    getParam DepthBits = glfwGetWindowParam 0x00020009
+    
+-- | Query the number of bits for the stencil buffer.
+instance Param StencilBits where
+    getParam StencilBits = glfwGetWindowParam 0x0002000A
+    
+-- | Query the vertical monitor refresh rate in Hz (only used for fullscreen windows).
+instance Param RefreshRate where
+    getParam RefreshRate = glfwGetWindowParam 0x0002000B
+    
+-- | Query the number of bits for the red channel of the accumulation buffer.
+instance Param AccumRedBits where
+    getParam AccumRedBits = glfwGetWindowParam 0x0002000C
+    
+-- | Query the number of bits for the green channel of the accumulation buffer.
+instance Param AccumGreenBits where
+    getParam AccumGreenBits = glfwGetWindowParam 0x0002000D
+    
+-- | Query the number of bits for the blue channel of the accumulation buffer.
+instance Param AccumBlueBits where
+    getParam AccumBlueBits = glfwGetWindowParam 0x0002000E
+    
+-- | Query the number of bits for the alpha channel of the accumulation buffer.
+instance Param AccumAlphaBits where
+    getParam AccumAlphaBits = glfwGetWindowParam 0x0002000F
+    
+-- | Query the number of auxiliary buffers.
+instance Param AuxBuffers where
+    getParam AuxBuffers = glfwGetWindowParam 0x00020010
+    
+-- | Query whether the window supports stereo rendering.
+instance Param Stereo where
+    getParam Stereo = fmap toEnum $ glfwGetWindowParam 0x00020011
+    
+-- | Query whether the window can be resized by the user.
+instance Param NoResize where
+    getParam NoResize = fmap toEnum $ glfwGetWindowParam 0x00020012
+    
+-- | Query the number used for the multisampling buffer.
+instance Param FSAASamples where
+    getParam FSAASamples = glfwGetWindowParam 0x00020013
+    
+-- | Query the OpenGL major version.
+instance Param OpenGLVersionMajor where
+    getParam OpenGLVersionMajor = glfwGetWindowParam 0x00020014
+    
+-- | Query the OpenGL minor version.
+instance Param OpenGLVersionMinor where
+    getParam OpenGLVersionMinor = glfwGetWindowParam 0x00020015
+    
+-- | Query whether the current OpenGL context is forward-compatible.
+instance Param OpenGLForwardCompat where
+    getParam OpenGLForwardCompat = fmap toEnum $ glfwGetWindowParam 0x000200016
+    
+-- | Query whether the current OpenGL context is a debug context.
+instance Param OpenGLDebugContext where
+    getParam OpenGLDebugContext = fmap toEnum $ glfwGetWindowParam 0x00020017
+    
+-- | Query the OpenGL 'Profile' implemented by the current context.
+instance Param OpenGLProfile where
+    getParam OpenGLProfile = fmap toEnum $ glfwGetWindowParam 0x00020018
 
 foreign import ccall unsafe glfwGetWindowParam :: Int -> IO Int
 
@@ -1248,6 +1388,7 @@ glfwCleanup = do
   cleanup glfwKeyfun
   cleanup glfwCharfun
   where
+    cleanup :: IORef (Maybe (FunPtr a)) -> IO ()
     cleanup ref =
       atomicModifyIORef ref (\g -> (Nothing, g)) >>=
         maybe (return ()) freeHaskellFunPtr
