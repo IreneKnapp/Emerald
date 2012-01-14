@@ -92,6 +92,7 @@ configureUnix' = do
         maybeCheck checkDlOpen               "dlopen"               ["-D_GLFW_HAS_DLOPEN"]               []
         
     check checkSysConf "sysconf" ["-D_GLFW_HAS_SYSCONF"] []
+    check checkSysCtl  "sysctl"  ["-D_GLFW_HAS_SYSCTL"]  []
     
     return ()
 
