@@ -38,37 +38,36 @@ addLib lib = StateT $ \(ConfState fs ls) -> return ((), ConfState fs (lib:ls))
 
 myBuildHook pkgDesc localBuildInfo userHooks buildFlags = do
     putStrLn "Configuring C build"
-    let verbosity = fromFlag . buildVerbosity $ buildFlags
-        flags     = case buildOS of
-                    Windows -> []
-                    OSX     -> []
-                    _       -> []
+    --let verbosity = fromFlag . buildVerbosity $ buildFlags
     
-    flags' <- case buildOS of
-                       Windows -> configureWindows
-                       OSX     -> configureOSX
-                       _       -> configureUnix flags
-    
+    (flags, libs) <- case buildOS of
+                     Windows -> configureWindows
+                     OSX     -> configureOSX
+                     _       -> configureUnix
+                     
     let lib      = fromJust . library $ pkgDesc
         info     = libBuildInfo lib
-        info'    = info { ccOptions = ccOptions info ++ flags' }
+        info'    = info
+                 { ccOptions = ccOptions info ++ flags
+                 , extraLibs = extraLibs info ++ libs
+                 }
         lib'     = Just $ lib { libBuildInfo = info' }
         pkgDesc' = pkgDesc { library = lib' }
     
     buildHook simpleUserHooks pkgDesc' localBuildInfo userHooks buildFlags
     
     
-configureWindows :: IO Flags
-configureWindows = return []
+configureWindows :: IO (Flags, Libs)
+configureWindows = return ([], [])
 
 
-configureOSX :: IO Flags
-configureOSX = return []
+configureOSX :: IO (Flags, Libs)
+configureOSX = return ([], [])
 
 
-configureUnix :: Flags -> IO Flags
-configureUnix defaultFlags = do
-    ConfState flags libs <- execStateT configureUnix' $ ConfState defaultFlags []
+configureUnix :: IO (Flags, Libs)
+configureUnix = do
+    ConfState flags libs <- execStateT configureUnix' $ ConfState [] []
     putStr "Flags:"
     mapM_ (putStr . (' ':)) flags
     putStrLn ""
@@ -76,7 +75,7 @@ configureUnix defaultFlags = do
     mapM_ (putStr . (' ' :)) libs
     putStrLn ""
     
-    return flags
+    return (flags, libs)
     
     
 configureUnix' :: StateT ConfState IO ()
