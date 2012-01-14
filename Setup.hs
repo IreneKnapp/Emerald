@@ -18,7 +18,8 @@ import Data.Maybe (fromJust)
 
 main :: IO ()
 main = defaultMainWithHooks simpleUserHooks
-    { buildHook   = myBuildHook
+    { buildHook = myBuildHook
+    , instHook  = myInstHook
     }
     
     
@@ -36,6 +37,23 @@ addLib :: String -> StateT ConfState IO ()
 addLib lib = StateT $ \(ConfState fs ls) -> return ((), ConfState fs (lib:ls))
 
 
+myInstHook pkgDesc localBuildInfo userHooks installFlags = do
+    let file = tmpFile $ fromJust . pkgDescrFile $ localBuildInfo
+    libs <- readFile file
+    
+    let lib       = fromJust . library $ pkgDesc
+        info      = libBuildInfo lib
+        libs'     = libs : extraLibs info
+        info'     = info { extraLibs = libs' }
+        lib'      = Just $ lib { libBuildInfo = info' }
+        pkgDesc'  = pkgDesc { library = lib' }
+        
+    --putStrLn $ "Install hook> extra libs: " ++ (show libs')
+    removeFile file
+    
+    instHook simpleUserHooks pkgDesc' localBuildInfo userHooks installFlags
+
+
 myBuildHook pkgDesc localBuildInfo userHooks buildFlags = do
     putStrLn "Configuring C build"
     --let verbosity = fromFlag . buildVerbosity $ buildFlags
@@ -45,14 +63,17 @@ myBuildHook pkgDesc localBuildInfo userHooks buildFlags = do
                      OSX     -> configureOSX
                      _       -> configureUnix
                      
-    let lib      = fromJust . library $ pkgDesc
-        info     = libBuildInfo lib
-        info'    = info
-                 { ccOptions = ccOptions info ++ flags
-                 , extraLibs = extraLibs info ++ libs
-                 }
-        lib'     = Just $ lib { libBuildInfo = info' }
-        pkgDesc' = pkgDesc { library = lib' }
+    let lib       = fromJust . library $ pkgDesc
+        info      = libBuildInfo lib
+        info'     = info
+                  { ccOptions = ccOptions info ++ flags
+                  , extraLibs = extraLibs info ++ libs
+                  }
+        lib'      = Just $ lib { libBuildInfo = info' }
+        pkgDesc'  = pkgDesc { library = lib' }
+        cabalFile = fromJust . pkgDescrFile $ localBuildInfo
+        
+    writeBuildInfo libs cabalFile
     
     buildHook simpleUserHooks pkgDesc' localBuildInfo userHooks buildFlags
     
@@ -229,3 +250,15 @@ performTest contents = do
     
 toObject :: FilePath -> FilePath
 toObject = reverse . ('o':) . ('.':) . drop 2 . reverse
+
+
+writeBuildInfo :: Libs -> FilePath -> IO ()
+writeBuildInfo libs cabalFile = do
+    let file = tmpFile cabalFile
+        contents = unwords libs
+        
+    writeFile file contents
+
+
+tmpFile :: FilePath -> FilePath
+tmpFile = (++ "tmp") . reverse . drop 5 . reverse
