@@ -48,6 +48,7 @@ library
   if flag(dynamic)
     extra-libraries: glfw
   else
+    cc-options: -O2
     c-sources:
       glfw/lib/enable.c
       glfw/lib/fullscreen.c
@@ -63,8 +64,9 @@ library
       glfw/lib/window.c
 
     if os(linux)
-      include-dirs: glfw/lib/x11
-      extra-libraries: Xrandr X11
+      include-dirs:    glfw/lib/x11
+      extra-libraries: Xrandr X11 GL
+      cc-options:      -O2 -D_GLFW_USE_LINUX_JOYSTICKS
       c-sources:
         glfw/lib/x11/x11_enable.c
         glfw/lib/x11/x11_fullscreen.c
