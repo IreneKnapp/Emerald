@@ -3,157 +3,158 @@ module Main (main) where
 
 import Distribution.Simple
 import Distribution.Simple.Setup
-import Distribution.Simple.Utils (rawSystemExit)
+import Distribution.Simple.Utils (rawSystemStdInOut, withTempFile)
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Simple.Program
 import Distribution.Verbosity
 import Distribution.PackageDescription
 import Distribution.System
+import System.FilePath
 import System.Directory
 import Control.Monad.State
-import Control.Monad (when, mzero)
-import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Class (lift)
+import System.IO (hClose, hPutStr)
+import System.Cmd (rawSystem)
 import Data.Maybe (fromJust)
+import Foreign (bitSize)
+import System.Exit 
 
 main :: IO ()
-main = defaultMainWithHooks simpleUserHooks
-    { buildHook = myBuildHook
-    , instHook  = myInstHook
+main = defaultMainWithHooks $ simpleUserHooks 
+    { confHook = myConfHook 
+    , buildHook = myBuildHook
     }
     
-    
+myConfHook pkg_descr flags = do
+    let verbosity = fromFlag (configVerbosity flags)
+    lbi <- confHook simpleUserHooks pkg_descr flags
+    (flags, libs) <- (case buildOS of
+                        Windows -> configureWindows 
+                        OSX     -> configureOSX
+                        _       -> configureUnix) verbosity
+    let info  = emptyBuildInfo
+              { ccOptions = flags
+              , extraLibs = libs
+              }
+        descr = updatePackageDescription (Just info, []) (localPkgDescr lbi)
+    return $ lbi { localPkgDescr = descr } 
+
+myBuildHook pkg_descr local_bld_info user_hooks bld_flags =
+    do
+    let lib       = fromJust (library pkg_descr)
+        lib_bi    = libBuildInfo lib
+        custom_bi = customFieldsBI lib_bi
+    case lookup "x-cc-name" custom_bi of
+      Nothing -> buildHook simpleUserHooks pkg_descr local_bld_info user_hooks bld_flags
+      Just cpp_name -> do
+        let cpp_name  = fromJust (lookup "x-cc-name" custom_bi)
+            c_srcs    = cSources lib_bi
+            mbits     = bitSize (undefined :: Int)
+            cc_opts   = ("-m" ++ show mbits) : "-S" : ccOptions lib_bi
+            inc_dirs  = includeDirs lib_bi
+            lib_dirs  = extraLibDirs lib_bi
+            bld_dir   = buildDir local_bld_info
+            prog      = ConfiguredProgram { programId = cpp_name, programVersion = Nothing,
+                                            programDefaultArgs = [], programOverrideArgs = [],
+                                            programLocation = FoundOnSystem { locationPath = cpp_name } }
+        -- Compile C/C++ sources
+        putStrLn $ "invoking my compile phase " ++ cpp_name
+        objs <- mapM (compileCxx prog cc_opts inc_dirs bld_dir) c_srcs
+        -- Remove C/C++ source code from the hooked build (don't change libs)
+        let 
+            lib_bi'    = lib_bi { cSources = map replaceWithAsm c_srcs }
+            lib'       = lib    { libBuildInfo = lib_bi' }
+            pkg_descr' = pkg_descr { library = Just lib' }
+        -- The following line invokes the standard build behaviour
+        putStrLn "Invoke default build hook"
+        buildHook simpleUserHooks pkg_descr' local_bld_info user_hooks bld_flags
+
+compileCxx :: ConfiguredProgram  -- ^ C/C++ compiler (gcc)
+           -> [String]           -- ^ Compile options from Cabal and wxConfig
+           -> [String]           -- ^ Include paths from Cabal and wxConfig
+           -> FilePath           -- ^ Base output directory
+           -> FilePath           -- ^ Path to source file
+           -> IO FilePath        -- ^ Path to generated object code
+compileCxx gcc opts incls out_path cxx_src = do
+    let includes  = map ("-I" ++) incls
+        -- out_path' = normalisePath out_path
+        -- cxx_src'  = normalisePath cxx_src
+        -- out_file  = out_path </> dropFileName cxx_src </>
+        --                replaceExtension (takeFileName cxx_src) ".o"
+        out_file = replaceWithAsm cxx_src
+        out       = ["-c", cxx_src, "-o", out_file]
+        -- opts     = opts ++ osCompileOpts
+        do_it     = True -- needsCompiling cxx_src out_file
+    when do_it $ createDirectoryIfMissing True (dropFileName out_file) >> 
+                 runProgram verbose gcc (includes ++ opts ++ out)
+    return out_file
+
+replaceWithAsm p = replaceExtension p ".s"
+
 type Flags = [String]
 type Libs  = [String]
 
 data ConfState = ConfState Flags Libs
 
-
 addFlag :: String -> StateT ConfState IO ()
-addFlag flag = StateT $ \(ConfState fs ls) -> return ((), ConfState (flag:fs) ls)
-
+addFlag flag = modify $ \(ConfState fs ls) -> ConfState (flag:fs) ls
 
 addLib :: String -> StateT ConfState IO ()
-addLib lib = StateT $ \(ConfState fs ls) -> return ((), ConfState fs (lib:ls))
+addLib lib = modify $ \(ConfState fs ls) -> ConfState fs (lib:ls)
+   
+configureWindows :: Verbosity -> IO (Flags, Libs)
+configureWindows verbosity = return ([], [])
 
+configureOSX :: Verbosity -> IO (Flags, Libs)
+configureOSX verbosity = return ([], [])
 
-myInstHook pkgDesc localBuildInfo userHooks installFlags = do
-    let file = tmpFile $ fromJust . pkgDescrFile $ localBuildInfo
-    libs <- readFile file
-    
-    let lib       = fromJust . library $ pkgDesc
-        info      = libBuildInfo lib
-        libs'     = libs : extraLibs info
-        info'     = info { extraLibs = libs' }
-        lib'      = Just $ lib { libBuildInfo = info' }
-        pkgDesc'  = pkgDesc { library = lib' }
-        
-    --putStrLn $ "Install hook> extra libs: " ++ (show libs')
-    removeFile file
-    
-    instHook simpleUserHooks pkgDesc' localBuildInfo userHooks installFlags
-
-
-myBuildHook pkgDesc localBuildInfo userHooks buildFlags = do
-    putStrLn "Configuring C build"
-    --let verbosity = fromFlag . buildVerbosity $ buildFlags
-    
-    (flags, libs) <- case buildOS of
-                     Windows -> configureWindows
-                     OSX     -> configureOSX
-                     _       -> configureUnix
-                     
-    let lib       = fromJust . library $ pkgDesc
-        info      = libBuildInfo lib
-        info'     = info
-                  { ccOptions = ccOptions info ++ flags
-                  , extraLibs = extraLibs info ++ libs
-                  }
-        lib'      = Just $ lib { libBuildInfo = info' }
-        pkgDesc'  = pkgDesc { library = lib' }
-        cabalFile = fromJust . pkgDescrFile $ localBuildInfo
-        
-    writeBuildInfo libs cabalFile
-    
-    buildHook simpleUserHooks pkgDesc' localBuildInfo userHooks buildFlags
-    
-    
-configureWindows :: IO (Flags, Libs)
-configureWindows = return ([], [])
-
-
-configureOSX :: IO (Flags, Libs)
-configureOSX = return ([], [])
-
-
-configureUnix :: IO (Flags, Libs)
-configureUnix = do
+configureUnix :: Verbosity -> IO (Flags, Libs)
+configureUnix verbosity = do
     ConfState flags libs <- execStateT configureUnix' $ ConfState [] []
-    putStr "Flags:"
-    mapM_ (putStr . (' ':)) flags
-    putStrLn ""
-    putStr "Libs:"
-    mapM_ (putStr . (' ' :)) libs
-    putStrLn ""
-    
+    when (verbosity > normal) $ putStrLn $ unlines $ map unwords [ "Flags:" : flags, "Libs:" : libs ]
     return (flags, libs)
-    
-    
-configureUnix' :: StateT ConfState IO ()
-configureUnix' = do
-    runMaybeT $ do
-        maybeCheck checkXrandr  "Xrandr"  ["-D_GLFW_HAS_XRANDR"]      ["Xrandr"]
-        maybeCheck checkVidMode "VidMode" ["-D_GLFW_HAS_XF86VIDMODE"] ["Xxf86vm", "Xext"]
-    
-    runMaybeT $ do
-        maybeCheck checkGlXGetProcAddress    "glXGetProcAddress"    ["-D_GLFW_HAS_GLXGETPROCADDRESS"]    []
-        maybeCheck checkGlXGetProcAddressARB "glXGetProcAddressARB" ["-D_GLFW_HAS_GLXGETPROCADDRESSARB"] []
-        maybeCheck checkGlXGetProcAddressEXT "glXGetProcAddressEXT" ["-D_GLFW_HAS_GLXGETPROCADDRESSEXT"] []
-        maybeCheck checkDlOpen               "dlopen"               ["-D_GLFW_HAS_DLOPEN"]               []
-        
-    check checkSysConf "sysconf" ["-D_GLFW_HAS_SYSCONF"] []
-    check checkSysCtl  "sysctl"  ["-D_GLFW_HAS_SYSCTL"]  []
-    
-    return ()
+    where 
+      check' test = check verbosity (performTest verbosity test)
+      configureUnix' :: StateT ConfState IO ()
+      configureUnix' = do
+          check' progXrandr  "Xrandr"  ["-D_GLFW_HAS_XRANDR"]      ["Xrandr"] `orelse`
+            check' progVidMode "VidMode" ["-D_GLFW_HAS_XF86VIDMODE"] ["Xxf86vm", "Xext"]
+          check' progGlXGetProcAddress    "glXGetProcAddress"    ["-D_GLFW_HAS_GLXGETPROCADDRESS"]    [] `orelse`
+            check' progGlXGetProcAddressARB "glXGetProcAddressARB" ["-D_GLFW_HAS_GLXGETPROCADDRESSARB"] [] `orelse`
+            check' progGlXGetProcAddressEXT "glXGetProcAddressEXT" ["-D_GLFW_HAS_GLXGETPROCADDRESSEXT"] [] `orelse`
+            check' progDlOpen               "dlopen"               ["-D_GLFW_HAS_DLOPEN"]               []
+          check' progSysConf "sysconf" ["-D_GLFW_HAS_SYSCONF"] []
+          check' progSysCtl  "sysctl"  ["-D_GLFW_HAS_SYSCTL"]  []
+          return ()
 
+f `orelse` g = f >>= \b -> if b then return b else g
 
-check :: IO (Bool) -> String -> Flags -> Libs -> StateT ConfState IO Bool
-check performCheck name flags libs = do
-    lift . putStr $ "Checking for " ++ name ++ " support..."
+check :: Verbosity -> IO Bool -> String -> Flags -> Libs -> StateT ConfState IO Bool
+check verbosity performCheck name flags libs = do
+    when (verbosity >= normal) $ lift . putStr $ "Checking for " ++ name ++ " support..."
     success <- lift performCheck
-    if success then do
-        mapM addFlag flags
-        mapM addLib libs
-        lift $ putStrLn "yes"
-        return True
-    else do
-        lift $ putStrLn "no"
-        return False
+    when (verbosity >= normal) $ lift . putStrLn $ if success then "yes" else "no"
+    when success $ mapM_ addFlag flags >> mapM_ addLib libs
+    return success
     
-    
-maybeCheck :: IO (Bool) -> String -> Flags -> Libs -> MaybeT (StateT ConfState IO) ()
-maybeCheck performCheck name flags libs  = do
-    success <- lift $ check performCheck name flags libs
-    if success then
-        mzero
-    else
-        return ()
-    
+performTest :: Verbosity -> String -> IO Bool
+performTest verbosity contents = do
+    tmpDir  <- getTemporaryDirectory
+    withTempFile tmpDir "glfw-test.c" $ \path inHandle -> 
+      withTempFile tmpDir "glfw-test.o" $ \objPath outHandle -> do
+        hClose outHandle
+        hPutStr inHandle contents
+        hClose inHandle
+        (out, err, exitCode) <- rawSystemStdInOut verbosity "cc" ["-c", path, "-o", objPath] Nothing False
+        return (exitCode == ExitSuccess)     
 
-checkXrandr :: IO (Bool)
-checkXrandr = performTest contents
-    where
-        contents = unlines
+progXrandr = unlines
             ["#include <X11/Xlib.h>"
             ,"#include <X11/extensions/Xrandr.h>"
             ,"int main() {return 0;}"
             ]
     
-    
-checkVidMode :: IO (Bool)
-checkVidMode = performTest contents
-    where
-        contents = unlines
+progVidMode = unlines
             ["#include <X11/Xlib.h>"
             ,"#include <X11/extensions/xf86vmode.h>"
             ,"#if defined(__APPLE_CC__)"
@@ -162,52 +163,33 @@ checkVidMode = performTest contents
             ,"int main() {return 0;}"
             ]
           
-checkGlXGetProcAddress :: IO (Bool)
-checkGlXGetProcAddress = performTest contents
-    where
-        contents = unlines
+progGlXGetProcAddress = unlines
             ["#include <X11/Xlib.h>"
             ,"#include <GL/glx.h>"
             ,"#include <GL/gl.h>"
             ,"int main() {void *ptr=(void*)glXGetProcAddress(\"glFun\"); return 0;}"
             ]
           
-          
-checkGlXGetProcAddressARB :: IO (Bool)
-checkGlXGetProcAddressARB = performTest contents
-    where
-        contents = unlines
+progGlXGetProcAddressARB = unlines
             ["#include <X11/Xlib.h>"
             ,"#include <GL/glx.h>"
             ,"#include <GL/gl.h>"
             ,"int main() {void *ptr=(void*)glXGetProcAddressARB(\"glFun\"); return 0;}"
             ]
           
-          
-checkGlXGetProcAddressEXT :: IO (Bool)
-checkGlXGetProcAddressEXT = performTest contents
-    where
-        contents = unlines
+progGlXGetProcAddressEXT = unlines
             ["#include <X11/Xlib.h>"
             ,"#include <GL/glx.h>"
             ,"#include <GL/gl.h>"
             ,"int main() {void *ptr=(void*)glXGetProcAddressEXT(\"glFun\"); return 0;}"
             ]
     
-    
-checkDlOpen :: IO (Bool)
-checkDlOpen = performTest contents
-    where
-        contents = unlines
+progDlOpen = unlines
             ["#include <dlfcn.h>"
             ,"int main() {void *l=dlopen(\"libGL.so\",RTLD_LAZY|RTLD_GLOBAL); return 0;}"
             ]
     
-    
-checkSysConf :: IO (Bool)
-checkSysConf = performTest contents
-    where
-        contents = unlines
+progSysConf = unlines
             ["#include <unistd.h>"
             ,"#ifndef _SC_NPROCESSORS_ONLN"
             ,"#ifndef _SC_NPROC_ONLN"
@@ -217,11 +199,7 @@ checkSysConf = performTest contents
             ,"int main() {long x=sysconf(_SC_ARG_MAX); return 0; }"
             ]
     
-    
-checkSysCtl :: IO (Bool)
-checkSysCtl = performTest contents
-    where
-        contents = unlines
+progSysCtl = unlines
             ["#include <sys/types.h>"
             ,"#include <sys/sysctl.h>"
             ,"#ifdef CTL_HW"
@@ -231,34 +209,4 @@ checkSysCtl = performTest contents
             ,"#endif"
             ,"int main() { return 0; }"
             ]
-    
-    
-performTest :: String -> IO (Bool)
-performTest contents = do
-    let path = "/tmp/glfw-test.c"
-        out  = toObject path
-    
-    writeFile path contents
-    rawSystemExit silent "cc" ["-c", path, "-o", out]
-    removeFile path
-    
-    success <- doesFileExist out
-    when (success) $ removeFile out
-    
-    return success
-    
-    
-toObject :: FilePath -> FilePath
-toObject = reverse . ('o':) . ('.':) . drop 2 . reverse
 
-
-writeBuildInfo :: Libs -> FilePath -> IO ()
-writeBuildInfo libs cabalFile = do
-    let file = tmpFile cabalFile
-        contents = unwords libs
-        
-    writeFile file contents
-
-
-tmpFile :: FilePath -> FilePath
-tmpFile = (++ "tmp") . reverse . drop 5 . reverse
