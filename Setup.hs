@@ -117,6 +117,12 @@ configureUnix verbosity = do
       check' test = check verbosity (performTest verbosity test)
       configureUnix' :: StateT ConfState IO ()
       configureUnix' = do
+          checkLibDir "/usr/X11" `orelse`
+            checkLibDir "/usr/X11R7" `orelse`
+            checkLibDir "/usr/X11R6" `orelse`
+            checkLibDir "/usr/X11R5" `orelse`
+            checkLibDir "/opt/X11R6" `orelse`
+            checkLibDir "/usr/X"
           check' progXrandr  "Xrandr"  ["-D_GLFW_HAS_XRANDR"]      ["Xrandr"] `orelse`
             check' progVidMode "VidMode" ["-D_GLFW_HAS_XF86VIDMODE"] ["Xxf86vm", "Xext"]
           check' progGlXGetProcAddress    "glXGetProcAddress"    ["-D_GLFW_HAS_GLXGETPROCADDRESS"]    [] `orelse`
@@ -129,23 +135,32 @@ configureUnix verbosity = do
 
 f `orelse` g = f >>= \b -> if b then return b else g
 
-check :: Verbosity -> IO Bool -> String -> Flags -> Libs -> StateT ConfState IO Bool
+
+
+checkLibDir :: String -> StateT ConfState IO Bool
+checkLibDir dir = do
+	result <- lift $ doesDirectoryExist (dir ++ "/lib")
+	when (result) $ addFlag ("-I" ++ dir ++ "/include")
+	return result
+
+check :: Verbosity -> (Flags -> IO Bool) -> String -> Flags -> Libs -> StateT ConfState IO Bool
 check verbosity performCheck name flags libs = do
     when (verbosity >= normal) $ lift . putStr $ "Checking for " ++ name ++ " support..."
-    success <- lift performCheck
+    ConfState flags _ <- get
+    success <- lift $ performCheck flags
     when (verbosity >= normal) $ lift . putStrLn $ if success then "yes" else "no"
     when success $ mapM_ addFlag flags >> mapM_ addLib libs
     return success
     
-performTest :: Verbosity -> String -> IO Bool
-performTest verbosity contents = do
+performTest :: Verbosity -> String -> Flags -> IO Bool
+performTest verbosity contents flags = do
     tmpDir  <- getTemporaryDirectory
     withTempFile tmpDir "glfw-test.c" $ \path inHandle -> 
       withTempFile tmpDir "glfw-test.o" $ \objPath outHandle -> do
         hClose outHandle
         hPutStr inHandle contents
         hClose inHandle
-        (out, err, exitCode) <- rawSystemStdInOut verbosity "cc" ["-c", path, "-o", objPath] Nothing False
+        (out, err, exitCode) <- rawSystemStdInOut verbosity "cc" (["-c", path, "-o", objPath] ++ flags) Nothing False
         return (exitCode == ExitSuccess)     
 
 progXrandr = unlines
