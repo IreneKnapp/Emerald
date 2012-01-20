@@ -1,5 +1,8 @@
--- | Haskell Interface to GLFW (<http://glfw.sourceforge.net>).
+-- | Haskell Interface to GLFW (<http://www.glfw.org>).
 --   Supports GLFW API version 2.7.2.
+--
+--   GLFW thread functions are not supported by this module; use
+--   Haskell thread instead.
 
 {-# LANGUAGE CPP, ExistentialQuantification, ForeignFunctionInterface, TypeFamilies #-}
 
@@ -8,34 +11,6 @@ module Graphics.UI.GLFW
     Version
   , DisplayBits(..)
   , WindowMode(..)
-  , ParamVal
-  , Param(..)
-  , Hint(..)
-  , Opened(..)
-  , Active(..)
-  , Iconified(..)
-  , Accelerated(..)
-  , RedBits(..)
-  , GreenBits(..)
-  , BlueBits(..)
-  , AlphaBits(..)
-  , DepthBits(..)
-  , StencilBits(..)
-  , RefreshRate(..)
-  , AccumRedBits(..)
-  , AccumGreenBits(..)
-  , AccumBlueBits(..)
-  , AccumAlphaBits(..)
-  , AuxBuffers(..)
-  , Stereo(..)
-  , NoResize(..)
-  , FSAASamples(..)
-  , OpenGLVersionMajor(..)
-  , OpenGLVersionMinor(..)
-  , OpenGLForwardCompat(..)
-  , OpenGLDebugContext(..)
-  , OpenGLProfile(..)
-  , Profile(..)
   , VideoMode(..)
   , KeyButtonState(..)
   , Key(..)
@@ -107,8 +82,36 @@ module Graphics.UI.GLFW
     -- * Miscellaneous
   , enableSpecial
   , disableSpecial
-    -- * GLFW thread support functions purposefully omitted
-  ) where
+    -- * Window parameters and hints
+  , ParamVal
+  , Param(..)
+  , Hint(..)
+  , Opened(..)
+  , Active(..)
+  , Iconified(..)
+  , Accelerated(..)
+  , RedBits(..)
+  , GreenBits(..)
+  , BlueBits(..)
+  , AlphaBits(..)
+  , DepthBits(..)
+  , StencilBits(..)
+  , RefreshRate(..)
+  , AccumRedBits(..)
+  , AccumGreenBits(..)
+  , AccumBlueBits(..)
+  , AccumAlphaBits(..)
+  , AuxBuffers(..)
+  , Stereo(..)
+  , NoResize(..)
+  , FSAASamples(..)
+  , OpenGLVersionMajor(..)
+  , OpenGLVersionMinor(..)
+  , OpenGLForwardCompat(..)
+  , OpenGLDebugContext(..)
+  , OpenGLProfile(..)
+  , Profile(..)
+) where
 
 import Control.Monad (liftM, liftM2)
 import Data.IORef    (IORef, atomicModifyIORef, newIORef, readIORef, writeIORef)
@@ -143,6 +146,41 @@ instance Enum WindowMode where
   toEnum 0x00010002 = FullScreen
   toEnum _          = error "GLFW: WindowMode toEnum out of bounds"
   
+-- | We use type families to organize Window params that
+--   can be set using 'getParam' of the 'Param' class.
+--   The value of a param 'a' is of type 'ParamVal' 'a', 
+--   where 'ParamVal' is a type family defined as follows: 
+--  
+-- > ParamVal Opened      = Bool
+-- > ParamVal Active      = Bool
+-- > ParamVal Iconified   = Bool
+-- > ParamVal Accelerated = Bool
+-- > ParamVal RedBits     = Int
+-- > ParamVal GreenBits   = Int
+-- > ParamVal BlueBits    = Int
+-- > ParamVal AlphaBits   = Int
+-- > ParamVal DepthBits   = Int
+-- > ParamVal StencilBits = Int
+-- 
+--   The following are both params and hints that can be set using 
+--   'openWindowHint' of the 'Hint' class.
+-- 
+-- > ParamVal RefreshRate         = Int
+-- > ParamVal AccumRedBits        = Int
+-- > ParamVal AccumGreenBits      = Int
+-- > ParamVal AccumBlueBits       = Int
+-- > ParamVal AccumAlphaBits      = Int
+-- > ParamVal AuxBuffers          = Int
+-- > ParamVal Stereo              = Bool
+-- > ParamVal NoResize            = Bool
+-- > ParamVal FSAASamples         = Int
+-- > ParamVal OpenGLVersionMajor  = Int
+-- > ParamVal OpenGLVersionMinor  = Int
+-- > ParamVal OpenGLForwardCompat = Bool
+-- > ParamVal OpenGLDebugContext  = Bool
+-- > ParamVal OpenGLProfile       = Profile
+--
+
 type family ParamVal a
 
 class Param a where
@@ -151,124 +189,54 @@ class Param a where
 class Param a => Hint a where
     openWindowHint :: a -> ParamVal a -> IO ()
     
--- | 'ParamVal' 'Opened' = 'Bool'
 data Opened = Opened
-
-type instance ParamVal Opened = Bool
-
--- | 'ParamVal' 'Active' = 'Bool'
 data Active = Active
-
-type instance ParamVal Active = Bool
-
--- | 'ParamVal' 'Iconified' = 'Bool'
 data Iconified = Iconified
-
-type instance ParamVal Iconified = Bool
-
--- | 'ParamVal' 'Accelerated' = 'Bool'
 data Accelerated = Accelerated
-
-type instance ParamVal Accelerated = Bool
-
--- | 'ParamVal' 'RedBits' = 'Int'
 data RedBits = RedBits
-
-type instance ParamVal RedBits = Int
-
--- | 'ParamVal' 'GreenBits' = 'Int'
 data GreenBits = GreenBits
-
-type instance ParamVal GreenBits = Int
-
--- | 'ParamVal' 'BlueBits' = 'Int'
 data BlueBits = BlueBits
-
-type instance ParamVal BlueBits = Int
-
--- | 'ParamVal' 'AlphaBits' = 'Int'
 data AlphaBits = AlphaBits
-
-type instance ParamVal AlphaBits = Int
-
--- | 'ParamVal' 'DepthBits' = 'Int'
 data DepthBits = DepthBits
-
-type instance ParamVal DepthBits = Int
-
--- | 'ParamVal' 'StencilBits' = 'Int'
 data StencilBits = StencilBits
-
-type instance ParamVal StencilBits = Int
-    
--- | 'ParamVal' 'RefreshRate' = 'Int'
 data RefreshRate = RefreshRate
-
-type instance ParamVal RefreshRate = Int
-
--- | 'ParamVal' 'AccumRedBits' = 'Int'
 data AccumRedBits = AccumRedBits
-
-type instance ParamVal AccumRedBits = Int
-
--- | 'ParamVal' 'AccumGreenBits' = 'Int'
 data AccumGreenBits = AccumGreenBits
-
-type instance ParamVal AccumGreenBits = Int
-
--- | 'ParamVal' 'AccumBlueBits' = 'Int'
 data AccumBlueBits = AccumBlueBits
-
-type instance ParamVal AccumBlueBits = Int
-
--- | 'ParamVal' 'AccumAlphaBits' = 'Int'
 data AccumAlphaBits = AccumAlphaBits
-
-type instance ParamVal AccumAlphaBits = Int
-
--- | 'ParamVal' 'AuxBuffers' = 'Int'
 data AuxBuffers = AuxBuffers
-
-type instance ParamVal AuxBuffers = Int
-
--- | 'ParamVal' 'Stereo' = 'Bool'
 data Stereo = Stereo
-
-type instance ParamVal Stereo = Bool
-
--- | 'ParamVal' 'NoResize' = 'Bool'
 data NoResize = NoResize
-
-type instance ParamVal NoResize = Bool
-
--- | 'ParamVal' 'FSAASamples' = 'Int'
 data FSAASamples = FSAASamples
-
-type instance ParamVal FSAASamples = Int
-
--- | 'ParamVal' 'OpenGLVersionMajor' = 'Int'
 data OpenGLVersionMajor = OpenGLVersionMajor
-
-type instance ParamVal OpenGLVersionMajor = Int
-
--- | 'ParamVal' 'OpenGLVersionMinor' = 'Int'
 data OpenGLVersionMinor = OpenGLVersionMinor
-
-type instance ParamVal OpenGLVersionMinor = Int
-
--- | 'ParamVal' 'OpenGLForwardCompat' = 'Bool'
 data OpenGLForwardCompat = OpenGLForwardCompat
-
-type instance ParamVal OpenGLForwardCompat = Bool
-
--- | 'ParamVal' 'OpenGLDebugContext' = 'Bool'
 data OpenGLDebugContext = OpenGLDebugContext
-
-type instance ParamVal OpenGLDebugContext = Bool
-
--- | 'ParamVal' 'OpenGLProfile' = 'Profile'
 data OpenGLProfile = OpenGLProfile
 
+type instance ParamVal Opened = Bool
+type instance ParamVal Active = Bool
+type instance ParamVal Iconified = Bool
+type instance ParamVal Accelerated = Bool
+type instance ParamVal RedBits = Int
+type instance ParamVal GreenBits = Int
+type instance ParamVal BlueBits = Int
+type instance ParamVal AlphaBits = Int
+type instance ParamVal DepthBits = Int
+type instance ParamVal StencilBits = Int
+type instance ParamVal RefreshRate = Int
+type instance ParamVal AccumRedBits = Int
+type instance ParamVal AccumGreenBits = Int
+type instance ParamVal AccumBlueBits = Int
+type instance ParamVal AccumAlphaBits = Int
+type instance ParamVal AuxBuffers = Int
+type instance ParamVal Stereo = Bool
+type instance ParamVal NoResize = Bool
+type instance ParamVal FSAASamples = Int
+type instance ParamVal OpenGLVersionMajor = Int
+type instance ParamVal OpenGLVersionMinor = Int
+type instance ParamVal OpenGLForwardCompat = Bool
+type instance ParamVal OpenGLDebugContext = Bool
 type instance ParamVal OpenGLProfile = Profile
 
 -- | OpenGL profiles, used in 'openWindowHint' with 'OpenGLProfile'.
