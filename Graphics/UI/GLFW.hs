@@ -117,8 +117,7 @@ import Control.Monad (liftM, liftM2)
 import Data.IORef    (IORef, atomicModifyIORef, newIORef, readIORef, writeIORef)
 import Foreign
 import Foreign.C
-import Graphics.Rendering.OpenGL (($=))
-import Graphics.Rendering.OpenGL (GLfloat)
+import Graphics.Rendering.OpenGL (GLfloat, ($=))
 import qualified Graphics.Rendering.OpenGL as GL
 
 -- | Version is represented by (major, minor, revision), used
@@ -147,7 +146,7 @@ instance Enum WindowMode where
   toEnum _          = error "GLFW: WindowMode toEnum out of bounds"
   
 -- | We use type families to organize Window params that
---   can be set using 'getParam' of the 'Param' class.
+--   can be retrieved using 'getParam' of the 'Param' class.
 --   The value of a param 'a' is of type 'ParamVal' 'a', 
 --   where 'ParamVal' is a type family defined as follows: 
 --  
@@ -643,10 +642,7 @@ version = GL.makeGettableStateVar $
   with 0 $ \y ->
   with 0 $ \z -> do
     glfwGetVersion x y z
-    x' <- peek x
-    y' <- peek y
-    z' <- peek z
-    return (x', y', z')
+    peek3 (x, y, z)
 
 foreign import ccall unsafe glfwGetVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
 
@@ -689,62 +685,62 @@ foreign import ccall unsafe "glfwCloseWindow" closeWindow :: IO ()
 --   Zero means system default. Use with caution: specifying a refresh rate can override the system's settings,
 --   in which case the display may be suboptimal, fail or even damage the monitor.
 instance Hint RefreshRate where
-    openWindowHint RefreshRate val = glfwOpenWindowHint 0x0002000B val
+    openWindowHint RefreshRate = glfwOpenWindowHint 0x0002000B 
     
 -- | Specify the number of bits for the red channel of the accumulation buffer.
 instance Hint AccumRedBits where
-    openWindowHint AccumRedBits val = glfwOpenWindowHint 0x0002000C val
+    openWindowHint AccumRedBits = glfwOpenWindowHint 0x0002000C 
     
 -- | Specify the number of bits for the green channel of the accumulation buffer.
 instance Hint AccumGreenBits where
-    openWindowHint AccumGreenBits val = glfwOpenWindowHint 0x0002000D val
+    openWindowHint AccumGreenBits = glfwOpenWindowHint 0x0002000D 
     
 -- | Specify the number of bits for the blue channel of the accumulation buffer.
 instance Hint AccumBlueBits where
-    openWindowHint AccumBlueBits val = glfwOpenWindowHint 0x0002000E val
+    openWindowHint AccumBlueBits = glfwOpenWindowHint 0x0002000E 
     
 -- | Specify the number of bits for the alpha channel of the accumulation buffer.
 instance Hint AccumAlphaBits where
-    openWindowHint AccumAlphaBits val = glfwOpenWindowHint 0x0002000F val
+    openWindowHint AccumAlphaBits = glfwOpenWindowHint 0x0002000F 
 
 -- | Specify the number of auxiliary buffers.
 instance Hint AuxBuffers where
-    openWindowHint AuxBuffers val = glfwOpenWindowHint 0x00020010 val
+    openWindowHint AuxBuffers = glfwOpenWindowHint 0x00020010 
     
 -- | Specify if stereo rendering should be supported.
 --   If Stereo is requested on a call to 'openWindowHint', but no stereo rendering pixel formats / framebuffer
 --   configs are available, 'openWindow' will fail.
 instance Hint Stereo where
-    openWindowHint Stereo val = glfwOpenWindowHint 0x00020011 (fromEnum val)
+    openWindowHint Stereo = glfwOpenWindowHint 0x00020011 . fromEnum 
 
 -- | Specify whether the window can be resized by the user.
 instance Hint NoResize where
-    openWindowHint NoResize val = glfwOpenWindowHint 0x00020012 (fromEnum val)
+    openWindowHint NoResize = glfwOpenWindowHint 0x00020012 . fromEnum 
     
 -- | Specify the number of samples to use for the multisampling buffer.
 instance Hint FSAASamples where
-    openWindowHint FSAASamples val = glfwOpenWindowHint 0x00020013 val
+    openWindowHint FSAASamples = glfwOpenWindowHint 0x00020013
     
 -- | Specify the major number of the desired minimum OpenGL version.
 instance Hint OpenGLVersionMajor where
-    openWindowHint OpenGLVersionMajor val = glfwOpenWindowHint 0x00020014 val
+    openWindowHint OpenGLVersionMajor = glfwOpenWindowHint 0x00020014 
     
 -- | Specify the minor number of the desired minimum OpenGL version.
 instance Hint OpenGLVersionMinor where
-    openWindowHint OpenGLVersionMinor val = glfwOpenWindowHint 0x00020015 val
+    openWindowHint OpenGLVersionMinor = glfwOpenWindowHint 0x00020015 
 
 -- | Specify whether the OpenGL context should be forward-compatible (i.e. disallow legacy functionality).
 --   This should only be used when requesting OpenGL version 3.0 or above.
 instance Hint OpenGLForwardCompat where
-    openWindowHint OpenGLForwardCompat val = glfwOpenWindowHint 0x00020016 (fromEnum val)
+    openWindowHint OpenGLForwardCompat = glfwOpenWindowHint 0x00020016 . fromEnum 
    
 -- | Specify whether a debug context should be created.
 instance Hint OpenGLDebugContext where
-    openWindowHint OpenGLDebugContext val = glfwOpenWindowHint 0x00020017 (fromEnum val)
+    openWindowHint OpenGLDebugContext = glfwOpenWindowHint 0x00020017 . fromEnum 
     
 -- | Specify the OpenGL profile the context should implement. For available profiles see 'Profile'.
 instance Hint OpenGLProfile where
-    openWindowHint OpenGLProfile val = glfwOpenWindowHint 0x00020018 (fromEnum val)
+    openWindowHint OpenGLProfile = glfwOpenWindowHint 0x00020018 . fromEnum 
 
 foreign import ccall unsafe glfwOpenWindowHint :: Int -> Int -> IO ()
 
@@ -1173,13 +1169,12 @@ mousePosCallback = GL.makeSettableStateVar setter
 #else
       -- Work around bug in GHC FFI
       -- See http://hackage.haskell.org/trac/ghc/ticket/2594
-            ptr <- malloc
-            poke ptr x
-            x32 <- (peek (castPtr ptr)) :: IO Int32
-            poke ptr y
-            y32 <- (peek (castPtr ptr)) :: IO Int32
-            free ptr
-            return $ GL.Position (fromIntegral x32) (fromIntegral y32)
+            with 0 $ \ptr -> do
+              poke ptr x
+              x32 <- peek (castPtr ptr) :: IO Int32
+              poke ptr y
+              y32 <- peek (castPtr ptr) :: IO Int32
+              return $ GL.Position (fromIntegral x32) (fromIntegral y32)
 #endif
       ptr <- glfwWrapFun2 g
       glfwSetCallbackIORef glfwMouseposfun ptr
@@ -1202,12 +1197,10 @@ mouseWheelCallback  = GL.makeSettableStateVar setter
 #else
       -- Work around bug in GHC FFI
       -- See http://hackage.haskell.org/trac/ghc/ticket/2594
-      let g x = do
-            ptr <- malloc
-            poke ptr x
-            x32 <- (peek (castPtr ptr)) :: IO Int32
-            free ptr
-            f (fromIntegral x32)
+      let g x = with 0 \ptr -> do
+                    poke ptr x
+                    x32 <- peek (castPtr ptr) :: IO Int32
+                    f (fromIntegral x32)
       ptr <- glfwWrapFun1 g
 #endif
       glfwSetCallbackIORef glfwMousewheelfun ptr
@@ -1249,10 +1242,7 @@ glVersion = GL.makeGettableStateVar $
   with 0 $ \y ->
   with 0 $ \z -> do
     glfwGetGLVersion x y z
-    x' <- peek x
-    y' <- peek y
-    z' <- peek z
-    return (x', y', z')
+    peek3 (x, y, z)
     
 foreign import ccall unsafe glfwGetGLVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
 
@@ -1300,7 +1290,7 @@ foreign import ccall unsafe glfwDisable :: Int -> IO ()
 --   resolution using bilinear interpolation if necessary.
 loadTexture2D :: String -> [TextureFlag] -> IO Bool
 loadTexture2D fname flag = do
-  r <- flip withCString (flip glfwLoadTexture2D (readFlag flag)) fname
+  r <- withCString fname (`glfwLoadTexture2D` readFlag flag) 
   return $ toEnum r
 
 foreign import ccall unsafe glfwLoadTexture2D :: CString -> Int -> IO Int
@@ -1363,7 +1353,7 @@ glfwCleanup = do
 
 -- text rendering
 
-fontTextures :: IORef ([(BitmapFont, GL.TextureObject)])
+fontTextures :: IORef [(BitmapFont, GL.TextureObject)]
 fontTextures = unsafePerformIO (newIORef [])
 
 loadFont :: BitmapFont -> IO GL.TextureObject
@@ -1419,6 +1409,13 @@ renderString name s = do
   GL.textureBinding GL.Texture2D $= Just font
   GL.preservingMatrix $ mapM_ (renderChar font) s
   GL.texture GL.Texture2D $= GL.Disabled
+
+peek3 :: (Storable t1, Storable t2, Storable t) => (Ptr t, Ptr t1, Ptr t2) -> IO (t, t1, t2)
+peek3 (x, y, z) = do
+  x' <- peek x
+  y' <- peek y
+  z' <- peek z
+  return (x', y', z')
 
 vector3 :: GLfloat -> GLfloat -> GLfloat -> GL.Vector3 GLfloat
 vector3 = GL.Vector3

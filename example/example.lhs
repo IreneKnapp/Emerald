@@ -7,7 +7,7 @@ This is a Haskell module for [http://www.glfw.org/ GLFW OpenGL framework]. It pr
 
 == Status ==
 
-The library is being used by the [http://www.haskell.org/soe Haskell School of Expression (SOE)] code to render Graphics in a cross-platform manner. It currently interfaces with GLFW version 2.6, works on Windows, Linux (i386) and Mac OS X (both intel and ppc).
+The library is being used by the [http://www.haskell.org/soe Haskell School of Expression (SOE)] code to render Graphics in a cross-platform manner. It currently interfaces with GLFW version 2.7.2, works on Windows, Linux (i386) and Mac OS X.
 
 GLFW itself is well documented (see [http://www.glfw.org/  GLFW website]), and the Haskell module API is documented via Haddock.
 
@@ -26,17 +26,17 @@ GLFW.hs. Text rendering
 is only possible with Alpha enabled. Again, see SOE.hs from
 the SOE package for sample usage.
 
-GLFW doesn't work well with GHC threads, forkIO or threadDelay.
+GLFW may not work well with GHC threads, forkIO or threadDelay.
 So avoid them if you can.
 
 
 == Download ==
 
-Current version is [http://hackage.haskell.org/cgi-bin/hackage-scripts/package/GLFW GLFW-0.4.2]. It's a repackage to work with Cabal 1.2 or later. It now compiles GLFW C source code as part of the building process, please report to the package maintainer if you have build problems.
+Current version is [http://hackage.haskell.org/cgi-bin/hackage-scripts/package/GLFW GLFW-0.5.0.0]. It works with Cabal 1.10 or later. It compiles GLFW C source code as part of the building process, please report to the package maintainer if you have build problems.
 
 
 == More information ==
-* [http://hackage.haskell.org/packages/archive/GLFW/0.4.2/doc/html/Graphics-UI-GLFW.html The Haddock documentation]
+* [http://hackage.haskell.org/packages/archive/GLFW/0.5.0.0/doc/html/Graphics-UI-GLFW.html The Haddock documentation]
 * [http://www.glfw.org/ The GLFW site]
 
 
@@ -50,6 +50,7 @@ import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL (($=))
 import Data.IORef
 import Control.Monad
+import System.Environment (getArgs, getProgName)
 \end{code}
 
 Because the program needs to process user input, i.e., mouse button and movements, we'll use a continuation like structure for this purpose. The <hask>Action</hask> type represents an IO operation that returns the next <hask>Action</hask> to continue execution.
@@ -62,6 +63,15 @@ The main program is mostly book-keeping such as initializing OpenGL and GLFW, cr
 
 \begin{code}
 main = do
+  -- invoke either active or passive drawing loop depending on command line argument
+  args <- getArgs
+  prog <- getProgName
+  case args of
+    ["active"]  -> putStrLn "Running in active mode" >> main' active 
+    ["passive"] -> putStrLn "Running in passive mode" >> main' passive
+    _ -> putStrLn $ "USAGE: " ++ prog ++ " [active|passive]"
+
+main' run = do
   GLFW.initialize
   -- open window
   GLFW.openWindow (GL.Size 400 400) [GLFW.DisplayAlphaBits 8] GLFW.Window
@@ -87,8 +97,8 @@ main = do
 
   -- keep all line strokes as a list of points in an IORef
   lines <- newIORef []
-  -- invoke the active drawing loop
-  active lines 
+  -- run the main loop
+  run lines
   -- finish up
   GLFW.closeWindow
   GLFW.terminate
@@ -221,8 +231,6 @@ passive lines = do
             when (b == GLFW.ButtonLeft && s == GLFW.Release) $
               waitForPress dirty
 \end{code}
-
-Just replace <hask>active</hask> with <hask>passive</hask> in the <hask>main</hask> function to run the second approach.
 
 The rest of the program goes below.
 

@@ -9,13 +9,14 @@ synopsis:      A Haskell binding for GLFW
 description:   A Haskell binding for GLFW, a window system independent toolkit
                for writing OpenGL programs. For more information about the C
                library on which this binding is based, please see
-               <http://glfw.sourceforge.net>.
+               <http://www.glfw.org>.
 license:       BSD3
 license-file:  LICENSE
 
 extra-source-files:
   Changelog.txt
   README.txt
+  example/example.lhs
   glfw/COPYING.txt
   glfw/include/GL/glfw.h
   glfw/lib/internal.h
@@ -37,7 +38,7 @@ library
   exposed-modules:
     Graphics.UI.GLFW
 
-  ghc-options:   -Wall -O2 -fspec-constr-count=6 
+  ghc-options:   -Wall -fspec-constr-count=6 
   if impl(ghc >= 6.8)
     ghc-options: -fwarn-tabs
 
@@ -48,7 +49,7 @@ library
   if flag(dynamic)
     extra-libraries: glfw
   else
-    cc-options: -O2
+    cc-options: 
     c-sources:
       glfw/lib/enable.c
       glfw/lib/fullscreen.c
@@ -92,7 +93,7 @@ library
       else
         include-dirs:    glfw/lib/x11
         extra-libraries: X11 GL
-        cc-options:      -O2 -D_GLFW_USE_LINUX_JOYSTICKS
+        cc-options:      -D_GLFW_USE_LINUX_JOYSTICKS
         c-sources:
           glfw/lib/x11/x11_enable.c
           glfw/lib/x11/x11_fullscreen.c
