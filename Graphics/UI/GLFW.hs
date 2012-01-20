@@ -552,7 +552,7 @@ data SpecialFeature
   --   key is held down long enough (according to the system key repeat configuration).
   | KeyRepeat
   -- | When enabled, 'pollEvents' is automatically called each time 'swapBuffers' is called,
-  --   immediately after the buffer swap itself.
+  --   immediately after the buffer swap itself. Enabled by default.
   | AutoPollEvent
   deriving (Eq, Show)
 
