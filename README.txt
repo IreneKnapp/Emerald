@@ -1,5 +1,5 @@
 This is a Haskell module for GLFW OpenGL framework
-(http://glfw.sourceforge.net). It provides an alternative
+(http://www.glfw.org). It provides an alternative
 to GLUT for OpenGL based Haskell programs.
 
 SOE (http://www.haskell.org/soe) now depends on this package.
@@ -18,7 +18,7 @@ Installation
 ============
 
 The package comes together with a (partial) source distribution 
-of GLFW v2.6, which is compiled and installed together with
+of GLFW v2.7.2, which is compiled and installed together with
 the Haskell package.
 
 If you already have the Haskell package cabal-install, you can
@@ -74,7 +74,7 @@ command.
 Package Usage
 =============
 
-The package is tested with GHC 6.8.3 as well GHC 6.10.3 on all
+The package is tested with GHC 6.8.3 and GHC 7.0.2 on all
 three platforms (Linux, Win32/MinGW, and Mac OS X). Though it may
 work with older versions of GHC or even Hugs, they are not tested.
 
