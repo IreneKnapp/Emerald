@@ -116,8 +116,8 @@ active lines = loop waitForPress
             GLFW.sleep 0.001
 
             -- only continue when the window is not closed
-            windowOpenStatus <- get $ windowParam POpened
-            unless (windowOpenStatus == 0) $
+            windowOpen <- getParam Opened
+            unless (not windowOpen) $
               loop action' -- loop with next action
 
     waitForPress = do
