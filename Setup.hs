@@ -28,13 +28,13 @@ main = defaultMainWithHooks $ simpleUserHooks
 myConfHook pkg_descr flags = do
     let verbosity = fromFlag (configVerbosity flags)
     lbi <- confHook simpleUserHooks pkg_descr flags
-    (flags, libs) <- (case buildOS of
+    cfg <- (case buildOS of
                         Windows -> configureWindows 
                         OSX     -> configureOSX
                         _       -> configureUnix) verbosity
     let info  = emptyBuildInfo
-              { ccOptions = flags
-              , extraLibs = libs
+              { ccOptions = confFlags cfg
+              , extraLibs = confLibs cfg
               }
         descr = updatePackageDescription (Just info, []) (localPkgDescr lbi)
     return $ lbi { localPkgDescr = descr } 
@@ -94,7 +94,9 @@ replaceWithAsm p = replaceExtension p ".s"
 type Flags = [String]
 type Libs  = [String]
 
-data ConfState = ConfState Flags Libs
+data ConfState = ConfState { confFlags :: Flags, confLibs :: Libs }
+
+emptyCfg = ConfState [] []
 
 addFlag :: String -> StateT ConfState IO ()
 addFlag flag = modify $ \(ConfState fs ls) -> ConfState (flag:fs) ls
@@ -102,17 +104,18 @@ addFlag flag = modify $ \(ConfState fs ls) -> ConfState (flag:fs) ls
 addLib :: String -> StateT ConfState IO ()
 addLib lib = modify $ \(ConfState fs ls) -> ConfState fs (lib:ls)
    
-configureWindows :: Verbosity -> IO (Flags, Libs)
-configureWindows verbosity = return ([], [])
+configureWindows :: Verbosity -> IO ConfState
+configureWindows verbosity = return emptyCfg
 
-configureOSX :: Verbosity -> IO (Flags, Libs)
-configureOSX verbosity = return ([], [])
+configureOSX :: Verbosity -> IO ConfState
+configureOSX verbosity = return emptyCfg
 
-configureUnix :: Verbosity -> IO (Flags, Libs)
+configureUnix :: Verbosity -> IO ConfState
 configureUnix verbosity = do
-    ConfState flags libs <- execStateT configureUnix' $ ConfState [] []
-    when (verbosity > normal) $ putStrLn $ unlines $ map unwords [ "Flags:" : flags, "Libs:" : libs ]
-    return (flags, libs)
+    cfg <- execStateT configureUnix' $ ConfState [] []
+    when (verbosity > normal) $ putStrLn $ unlines $ 
+        map unwords [ "Flags:" : confFlags cfg, "Libs:" : confLibs cfg ]
+    return cfg
     where 
       check' test = check verbosity (performTest verbosity test)
       configureUnix' :: StateT ConfState IO ()
@@ -146,8 +149,7 @@ checkLibDir dir = do
 check :: Verbosity -> (Flags -> IO Bool) -> String -> Flags -> Libs -> StateT ConfState IO Bool
 check verbosity performCheck name flags libs = do
     when (verbosity >= normal) $ lift . putStr $ "Checking for " ++ name ++ " support..."
-    ConfState flags _ <- get
-    success <- lift $ performCheck flags
+    success <- get >>= lift . performCheck . confFlags
     when (verbosity >= normal) $ lift . putStrLn $ if success then "yes" else "no"
     when success $ mapM_ addFlag flags >> mapM_ addLib libs
     return success
