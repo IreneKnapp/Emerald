@@ -70,11 +70,16 @@ dynamical library instead of compilation from source. It can be
 done by providing "--flags=dynamic" as an option to cabal configure
 command. 
 
+For Mac users, unfortunately interactively running GLFW programs
+from GHCi would result in a crash. The only sensible way is to 
+compile and run the program. On the other hand, it no longer 
+requires the enableGUI trick.
+
 =============
 Package Usage
 =============
 
-The package is tested with GHC 6.8.3 and GHC 7.0.2 on all
+The package is tested with GHC 6.10.2 and GHC 7.0.2 on all
 three platforms (Linux, Win32/MinGW, and Mac OS X). Though it may
 work with older versions of GHC or even Hugs, they are not tested.
 
@@ -121,4 +126,4 @@ There is also a mailinglist for GLFW deveopers at
   http://projects.haskell.org/cgi-bin/mailman/listinfo/glfw
 
 --
-Last Updated: Wed Aug 12 EDT 2009
+Last Updated: Fri Jan 20 PST 2012
