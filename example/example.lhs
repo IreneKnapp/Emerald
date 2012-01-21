@@ -7,7 +7,7 @@ This is a Haskell module for [http://www.glfw.org/ GLFW OpenGL framework]. It pr
 
 == Status ==
 
-The library is being used by the [http://www.haskell.org/soe Haskell School of Expression (SOE)] code to render Graphics in a cross-platform manner. It currently interfaces with GLFW version 2.7.2, works on Windows, Linux (i386) and Mac OS X.
+The library is being used by the [http://www.cs.yale.edu/homes/hudak/SOE/ Haskell School of Expression (SOE)] code to render Graphics in a cross-platform manner. It currently interfaces with GLFW version 2.7.2, works on Windows, Linux (i386) and Mac OS X.
 
 GLFW itself is well documented (see [http://www.glfw.org/  GLFW website]), and the Haskell module API is documented via Haddock.
 

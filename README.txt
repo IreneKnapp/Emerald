@@ -2,7 +2,8 @@ This is a Haskell module for GLFW OpenGL framework
 (http://www.glfw.org). It provides an alternative
 to GLUT for OpenGL based Haskell programs.
 
-SOE (http://www.haskell.org/soe) now depends on this package.
+SOE (http://www.cs.yale.edu/homes/hudak/SOE/) now 
+depends on this package.
 
 The website for this Haskell module is at Haskell Wiki site:
 http://haskell.org/haskellwiki/GLFW
