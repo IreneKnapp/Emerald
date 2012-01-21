@@ -915,7 +915,7 @@ windowSizeCallback = GL.makeSettableStateVar (\f -> do
 -- glfwSetWindowSizeCallback executes the callback (see window.c), ccall cannot be marked unsafe
 foreign import ccall safe glfwSetWindowSizeCallback :: FunPtr GLFWwindowsizefun -> IO ()
 
--- | Callback type for 'windowCloseCallback'.
+-- | Callback type for 'windowCloseCallback'. The callback should return 'True' to close the window, and 'False' otherwise.
 type WindowCloseCallback = IO Bool
 
 -- | Set the function that will be called when the window is closed.
