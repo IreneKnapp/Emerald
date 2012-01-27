@@ -1,5 +1,5 @@
 name:          GLFW
-version:       0.5.0.0
+version:       0.5.0.1
 homepage:      http://haskell.org/haskellwiki/GLFW
 maintainer:    Paul H. Liu <paul@thev.net>, Marc Sunet <jeannekamikaze@gmail.com>
 cabal-version: >= 1.10

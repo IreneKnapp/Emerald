@@ -1,4 +1,5 @@
 {- source partly taken from http://wewantarock.wordpress.com/tag/cabal/ -}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
 module Main (main) where
 
 import Distribution.Simple
@@ -9,15 +10,16 @@ import Distribution.Simple.Program
 import Distribution.Verbosity
 import Distribution.PackageDescription
 import Distribution.System
+import System.Exit 
 import System.FilePath
 import System.Directory
-import Control.Monad.State
-import Control.Monad.Trans.Class (lift)
 import System.IO (hClose, hPutStr)
 import System.Cmd (rawSystem)
 import Data.Maybe (fromJust)
 import Foreign (bitSize)
-import System.Exit 
+import Control.Monad (when)
+--import Control.Monad.State 
+--import Control.Monad.Trans.Class (lift)
 
 main :: IO ()
 main = defaultMainWithHooks $ simpleUserHooks 
@@ -226,4 +228,28 @@ progSysCtl = unlines
             ,"#endif"
             ,"int main() { return 0; }"
             ]
+
+-- Since we cannot specify that only Setup.hs depends on mtl, we include StateT here.
+
+newtype StateT s m a = StateT { runStateT :: s -> m (a,s) }
+execStateT m s = fmap snd $ runStateT m s 
+class (Monad m) => MonadState s m | m -> s where
+    get :: m s
+    put :: s -> m () 
+class MonadTrans t where 
+    lift :: Monad m => m a -> t m a
+modify f = get >>= put . f
+instance (Monad m) => Monad (StateT s m) where
+    return a = StateT $ \s -> return (a, s)
+    m >>= k  = StateT $ \s -> do
+        ~(a, s') <- runStateT m s 
+        runStateT (k a) s'
+    fail str = StateT $ \_ -> fail str 
+instance MonadTrans (StateT s) where
+    lift m = StateT $ \s -> do
+        a <- m
+        return (a, s)
+instance (Monad m) => MonadState s (StateT s m) where
+    get   = StateT $ \s -> return (s, s)                                                                               
+    put s = StateT $ \_ -> return ((), s)
 
