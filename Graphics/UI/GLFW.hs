@@ -1,5 +1,5 @@
 -- | Haskell Interface to GLFW (<http://www.glfw.org>).
---   Supports GLFW API version 2.7.2.
+--   Supports GLFW API version 2.7.5.
 --
 --   GLFW thread functions are not supported by this module; use
 --   Haskell thread instead.
@@ -115,8 +115,9 @@ module Graphics.UI.GLFW
 
 import Control.Monad (liftM, liftM2)
 import Data.IORef    (IORef, atomicModifyIORef, newIORef, readIORef, writeIORef)
-import Foreign
+import Foreign hiding (unsafePerformIO) -- deprecated in next release.
 import Foreign.C
+import System.IO.Unsafe (unsafePerformIO)
 import Graphics.Rendering.OpenGL (GLfloat, ($=))
 import qualified Graphics.Rendering.OpenGL as GL
 
