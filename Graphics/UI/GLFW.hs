@@ -783,7 +783,10 @@ foreign import ccall unsafe glfwSetWindowSize :: Int -> Int -> IO ()
 windowPos :: GL.SettableStateVar GL.Position
 windowPos = GL.makeSettableStateVar $ \(GL.Position x y) -> glfwSetWindowPos x y
 
-foreign import ccall unsafe glfwSetWindowPos :: GL.GLint -> GL.GLint -> IO ()
+foreign import ccall unsafe glfwSetWindowPosC :: Int -> Int -> IO ()
+
+glfwSetWindowPos :: GL.GLint -> GL.GLint -> IO ()
+glfwSetWindowPos x y = glfwSetWindowPosC (fromIntegral x) (fromIntegral y)
 
 -- | Iconify the window.
 foreign import ccall unsafe "glfwIconifyWindow" iconifyWindow :: IO ()
