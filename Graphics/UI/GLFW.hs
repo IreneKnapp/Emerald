@@ -613,21 +613,26 @@ _GLFW_INFINITY :: Double
 _GLFW_INFINITY = 100000
 
 -- Callback function type
-type GLFWwindowsizefun    = Int -> Int -> IO ()
-type GLFWwindowclosefun   = IO Bool
+type GLFWwindowsizefun    = CInt -> CInt -> IO ()
+type GLFWwindowclosefun   = IO CInt
 type GLFWwindowrefreshfun = IO ()
-type GLFWmousebuttonfun   = Int -> Int -> IO ()
-type GLFWmouseposfun      = Int -> Int -> IO ()
-type GLFWmousewheelfun    = Int -> IO ()
-type GLFWkeyfun           = Int -> Int -> IO ()
-type GLFWcharfun          = Int -> Int -> IO ()
+type GLFWmousebuttonfun   = CInt -> CInt -> IO ()
+type GLFWmouseposfun      = CInt -> CInt -> IO ()
+type GLFWmousewheelfun    = CInt -> IO ()
+type GLFWkeyfun           = CInt -> CInt -> IO ()
+type GLFWcharfun          = CInt -> CInt -> IO ()
 
 -- | Initialize GLFW library. Returns 'True' if successful, 'False' otherwise. Must
 --   be called before any other GLFW functions.
 initialize :: IO Bool
-initialize = liftM toEnum glfwInit
+initialize = liftM toEnum' glfwInit
 
-foreign import ccall unsafe glfwInit :: IO Int
+toEnum' :: (Integral a, Enum b) => a -> b
+toEnum' = toEnum . fromIntegral
+fromEnum' :: (Enum a, Integral b) => a -> b
+fromEnum' = fromIntegral . fromEnum 
+
+foreign import ccall unsafe glfwInit :: IO CInt
 
 -- | Terminate GLFW library after use. Before a program terminates, GLFW has to
 --   be terminated in order to free up resources, etc.
@@ -645,7 +650,7 @@ version = GL.makeGettableStateVar $
     glfwGetVersion x y z
     peek3 (x, y, z)
 
-foreign import ccall unsafe glfwGetVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
+foreign import ccall unsafe glfwGetVersion :: Ptr CInt -> Ptr CInt -> Ptr CInt -> IO ()
 
 -- | Open a window. Returns 'True' if successful, 'False' otherwise. GLFW
 --   applications can only open one window.
@@ -665,7 +670,10 @@ foreign import ccall unsafe glfwGetVersion :: Ptr Int -> Ptr Int -> Ptr Int -> I
 openWindow :: GL.Size -> [DisplayBits] -> WindowMode -> IO Bool
 openWindow (GL.Size w h) bits mode = do
   writeIORef fontTextures []
-  liftM toEnum $ glfwOpenWindow (fromIntegral w) (fromIntegral h) r' g' b' a' d' s' $ fromEnum mode
+  liftM toEnum' $ 
+    glfwOpenWindow (fromIntegral w) (fromIntegral h) 
+                   (fromIntegral r') (fromIntegral g')  (fromIntegral b') 
+                   (fromIntegral a') (fromIntegral d') (fromIntegral s') (fromEnum' mode)
   where
     (r', g', b', a', d', s') = gather bits (0, 0, 0, 0, 0, 0)
 
@@ -677,7 +685,7 @@ openWindow (GL.Size w h) bits mode = do
       DisplayStencilBits s_       -> (r , g , b , a , d , s_)
     gather [] vs = vs
 
-foreign import ccall unsafe glfwOpenWindow :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO Int
+foreign import ccall unsafe glfwOpenWindow :: CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO CInt
 
 -- | Close the open window and destroy the associated OpenGL context.
 foreign import ccall unsafe "glfwCloseWindow" closeWindow :: IO ()
@@ -686,64 +694,64 @@ foreign import ccall unsafe "glfwCloseWindow" closeWindow :: IO ()
 --   Zero means system default. Use with caution: specifying a refresh rate can override the system's settings,
 --   in which case the display may be suboptimal, fail or even damage the monitor.
 instance Hint RefreshRate where
-    openWindowHint RefreshRate = glfwOpenWindowHint 0x0002000B 
+    openWindowHint RefreshRate = glfwOpenWindowHint 0x0002000B . fromIntegral
     
 -- | Specify the number of bits for the red channel of the accumulation buffer.
 instance Hint AccumRedBits where
-    openWindowHint AccumRedBits = glfwOpenWindowHint 0x0002000C 
+    openWindowHint AccumRedBits = glfwOpenWindowHint 0x0002000C . fromIntegral
     
 -- | Specify the number of bits for the green channel of the accumulation buffer.
 instance Hint AccumGreenBits where
-    openWindowHint AccumGreenBits = glfwOpenWindowHint 0x0002000D 
+    openWindowHint AccumGreenBits = glfwOpenWindowHint 0x0002000D . fromIntegral
     
 -- | Specify the number of bits for the blue channel of the accumulation buffer.
 instance Hint AccumBlueBits where
-    openWindowHint AccumBlueBits = glfwOpenWindowHint 0x0002000E 
+    openWindowHint AccumBlueBits = glfwOpenWindowHint 0x0002000E . fromIntegral
     
 -- | Specify the number of bits for the alpha channel of the accumulation buffer.
 instance Hint AccumAlphaBits where
-    openWindowHint AccumAlphaBits = glfwOpenWindowHint 0x0002000F 
+    openWindowHint AccumAlphaBits = glfwOpenWindowHint 0x0002000F . fromIntegral
 
 -- | Specify the number of auxiliary buffers.
 instance Hint AuxBuffers where
-    openWindowHint AuxBuffers = glfwOpenWindowHint 0x00020010 
+    openWindowHint AuxBuffers = glfwOpenWindowHint 0x00020010 . fromIntegral
     
 -- | Specify if stereo rendering should be supported.
 --   If Stereo is requested on a call to 'openWindowHint', but no stereo rendering pixel formats / framebuffer
 --   configs are available, 'openWindow' will fail.
 instance Hint Stereo where
-    openWindowHint Stereo = glfwOpenWindowHint 0x00020011 . fromEnum 
+    openWindowHint Stereo = glfwOpenWindowHint 0x00020011 . fromEnum'
 
 -- | Specify whether the window can be resized by the user.
 instance Hint NoResize where
-    openWindowHint NoResize = glfwOpenWindowHint 0x00020012 . fromEnum 
+    openWindowHint NoResize = glfwOpenWindowHint 0x00020012 . fromEnum'
     
 -- | Specify the number of samples to use for the multisampling buffer.
 instance Hint FSAASamples where
-    openWindowHint FSAASamples = glfwOpenWindowHint 0x00020013
+    openWindowHint FSAASamples = glfwOpenWindowHint 0x00020013 . fromIntegral
     
 -- | Specify the major number of the desired minimum OpenGL version.
 instance Hint OpenGLVersionMajor where
-    openWindowHint OpenGLVersionMajor = glfwOpenWindowHint 0x00020014 
+    openWindowHint OpenGLVersionMajor = glfwOpenWindowHint 0x00020014 . fromIntegral
     
 -- | Specify the minor number of the desired minimum OpenGL version.
 instance Hint OpenGLVersionMinor where
-    openWindowHint OpenGLVersionMinor = glfwOpenWindowHint 0x00020015 
+    openWindowHint OpenGLVersionMinor = glfwOpenWindowHint 0x00020015 . fromIntegral
 
 -- | Specify whether the OpenGL context should be forward-compatible (i.e. disallow legacy functionality).
 --   This should only be used when requesting OpenGL version 3.0 or above.
 instance Hint OpenGLForwardCompat where
-    openWindowHint OpenGLForwardCompat = glfwOpenWindowHint 0x00020016 . fromEnum 
+    openWindowHint OpenGLForwardCompat = glfwOpenWindowHint 0x00020016 . fromEnum'
    
 -- | Specify whether a debug context should be created.
 instance Hint OpenGLDebugContext where
-    openWindowHint OpenGLDebugContext = glfwOpenWindowHint 0x00020017 . fromEnum 
+    openWindowHint OpenGLDebugContext = glfwOpenWindowHint 0x00020017 . fromEnum'
     
 -- | Specify the OpenGL profile the context should implement. For available profiles see 'Profile'.
 instance Hint OpenGLProfile where
-    openWindowHint OpenGLProfile = glfwOpenWindowHint 0x00020018 . fromEnum 
+    openWindowHint OpenGLProfile = glfwOpenWindowHint 0x00020018 . fromEnum'
 
-foreign import ccall unsafe glfwOpenWindowHint :: Int -> Int -> IO ()
+foreign import ccall unsafe glfwOpenWindowHint :: CInt -> CInt -> IO ()
 
 -- | Set the title of the opened window.
 windowTitle :: GL.SettableStateVar String
@@ -772,8 +780,8 @@ windowSize = GL.makeStateVar getter setter
             liftM2 GL.Size (fmap fromIntegral $ peek w) (fmap fromIntegral $ peek h)
         setter (GL.Size w h) = glfwSetWindowSize (fromIntegral w) (fromIntegral h)
 
-foreign import ccall unsafe glfwGetWindowSize :: Ptr Int -> Ptr Int -> IO ()
-foreign import ccall unsafe glfwSetWindowSize :: Int -> Int -> IO ()
+foreign import ccall unsafe glfwGetWindowSize :: Ptr CInt -> Ptr CInt -> IO ()
+foreign import ccall unsafe glfwSetWindowSize :: CInt -> CInt -> IO ()
 
 -- | Set the position of the opened window.
 --
@@ -783,7 +791,7 @@ foreign import ccall unsafe glfwSetWindowSize :: Int -> Int -> IO ()
 windowPos :: GL.SettableStateVar GL.Position
 windowPos = GL.makeSettableStateVar $ \(GL.Position x y) -> glfwSetWindowPos x y
 
-foreign import ccall unsafe "glfwSetWindowPos" glfwSetWindowPosC :: Int -> Int -> IO ()
+foreign import ccall unsafe "glfwSetWindowPos" glfwSetWindowPosC :: CInt -> CInt -> IO ()
 
 glfwSetWindowPos :: GL.GLint -> GL.GLint -> IO ()
 glfwSetWindowPos x y = glfwSetWindowPosC (fromIntegral x) (fromIntegral y)
@@ -803,107 +811,107 @@ foreign import ccall safe "glfwSwapBuffers" swapBuffers :: IO ()
 --   performed by 'swapBuffers'. If set to zero, buffer swaps will not be
 --   synchronized to the vertical refresh of the monitor.
 swapInterval :: GL.SettableStateVar Int
-swapInterval = GL.makeSettableStateVar glfwSwapInterval
+swapInterval = GL.makeSettableStateVar (glfwSwapInterval . fromIntegral)
 
-foreign import ccall unsafe glfwSwapInterval :: Int -> IO ()
+foreign import ccall unsafe glfwSwapInterval :: CInt -> IO ()
 
 -- | Query the window opened status.
 instance Param Opened where
-    getParam Opened = fmap toEnum $ glfwGetWindowParam 0x00020001
+    getParam Opened = fmap toEnum' $ glfwGetWindowParam 0x00020001
 
 -- | Query the window active status.
 instance Param Active where
-    getParam Active = fmap toEnum $ glfwGetWindowParam 0x00020002
+    getParam Active = fmap toEnum' $ glfwGetWindowParam 0x00020002
     
 -- | Query the window iconified status.
 instance Param Iconified where
-    getParam Iconified = fmap toEnum $ glfwGetWindowParam 0x00020003
+    getParam Iconified = fmap toEnum' $ glfwGetWindowParam 0x00020003
     
 -- | Query the window hardware accelerated status.
 instance Param Accelerated where
-    getParam Accelerated = fmap toEnum $ glfwGetWindowParam 0x00020004
+    getParam Accelerated = fmap toEnum' $ glfwGetWindowParam 0x00020004
     
 -- | Query the number of bits for the red color component.
 instance Param RedBits where
-    getParam RedBits = glfwGetWindowParam 0x00020005
+    getParam RedBits = fmap fromIntegral $ glfwGetWindowParam 0x00020005
     
 -- | Query the number of bits for the green color component.
 instance Param GreenBits where
-    getParam GreenBits = glfwGetWindowParam 0x00020006
+    getParam GreenBits = fmap fromIntegral $ glfwGetWindowParam 0x00020006
     
 -- | Query the number of bits for the blue color component.
 instance Param BlueBits where
-    getParam BlueBits = glfwGetWindowParam 0x00020007
+    getParam BlueBits = fmap fromIntegral $ glfwGetWindowParam 0x00020007
     
 -- | Query the number of bits for the alpha buffer.
 instance Param AlphaBits where
-    getParam AlphaBits = glfwGetWindowParam 0x00020008
+    getParam AlphaBits = fmap fromIntegral $ glfwGetWindowParam 0x00020008
     
 -- | Query the number of bits for the depth buffer.
 instance Param DepthBits where
-    getParam DepthBits = glfwGetWindowParam 0x00020009
+    getParam DepthBits = fmap fromIntegral $ glfwGetWindowParam 0x00020009
     
 -- | Query the number of bits for the stencil buffer.
 instance Param StencilBits where
-    getParam StencilBits = glfwGetWindowParam 0x0002000A
+    getParam StencilBits = fmap fromIntegral $ glfwGetWindowParam 0x0002000A
     
 -- | Query the vertical monitor refresh rate in Hz (only used for fullscreen windows).
 instance Param RefreshRate where
-    getParam RefreshRate = glfwGetWindowParam 0x0002000B
+    getParam RefreshRate = fmap fromIntegral $ glfwGetWindowParam 0x0002000B
     
 -- | Query the number of bits for the red channel of the accumulation buffer.
 instance Param AccumRedBits where
-    getParam AccumRedBits = glfwGetWindowParam 0x0002000C
+    getParam AccumRedBits = fmap fromIntegral $ glfwGetWindowParam 0x0002000C
     
 -- | Query the number of bits for the green channel of the accumulation buffer.
 instance Param AccumGreenBits where
-    getParam AccumGreenBits = glfwGetWindowParam 0x0002000D
+    getParam AccumGreenBits = fmap fromIntegral $ glfwGetWindowParam 0x0002000D
     
 -- | Query the number of bits for the blue channel of the accumulation buffer.
 instance Param AccumBlueBits where
-    getParam AccumBlueBits = glfwGetWindowParam 0x0002000E
+    getParam AccumBlueBits = fmap fromIntegral $ glfwGetWindowParam 0x0002000E
     
 -- | Query the number of bits for the alpha channel of the accumulation buffer.
 instance Param AccumAlphaBits where
-    getParam AccumAlphaBits = glfwGetWindowParam 0x0002000F
+    getParam AccumAlphaBits = fmap fromIntegral $ glfwGetWindowParam 0x0002000F
     
 -- | Query the number of auxiliary buffers.
 instance Param AuxBuffers where
-    getParam AuxBuffers = glfwGetWindowParam 0x00020010
+    getParam AuxBuffers = fmap fromIntegral $ glfwGetWindowParam 0x00020010
     
 -- | Query whether the window supports stereo rendering.
 instance Param Stereo where
-    getParam Stereo = fmap toEnum $ glfwGetWindowParam 0x00020011
+    getParam Stereo = fmap toEnum' $ glfwGetWindowParam 0x00020011
     
 -- | Query whether the window can be resized by the user.
 instance Param NoResize where
-    getParam NoResize = fmap toEnum $ glfwGetWindowParam 0x00020012
+    getParam NoResize = fmap toEnum' $ glfwGetWindowParam 0x00020012
     
 -- | Query the number used for the multisampling buffer.
 instance Param FSAASamples where
-    getParam FSAASamples = glfwGetWindowParam 0x00020013
+    getParam FSAASamples = fmap fromIntegral $ glfwGetWindowParam 0x00020013
     
 -- | Query the OpenGL major version.
 instance Param OpenGLVersionMajor where
-    getParam OpenGLVersionMajor = glfwGetWindowParam 0x00020014
+    getParam OpenGLVersionMajor = fmap fromIntegral $ glfwGetWindowParam 0x00020014
     
 -- | Query the OpenGL minor version.
 instance Param OpenGLVersionMinor where
-    getParam OpenGLVersionMinor = glfwGetWindowParam 0x00020015
+    getParam OpenGLVersionMinor = fmap fromIntegral $ glfwGetWindowParam 0x00020015
     
 -- | Query whether the current OpenGL context is forward-compatible.
 instance Param OpenGLForwardCompat where
-    getParam OpenGLForwardCompat = fmap toEnum $ glfwGetWindowParam 0x000200016
+    getParam OpenGLForwardCompat = fmap toEnum' $ glfwGetWindowParam 0x000200016
     
 -- | Query whether the current OpenGL context is a debug context.
 instance Param OpenGLDebugContext where
-    getParam OpenGLDebugContext = fmap toEnum $ glfwGetWindowParam 0x00020017
+    getParam OpenGLDebugContext = fmap toEnum' $ glfwGetWindowParam 0x00020017
     
 -- | Query the OpenGL 'Profile' implemented by the current context.
 instance Param OpenGLProfile where
-    getParam OpenGLProfile = fmap toEnum $ glfwGetWindowParam 0x00020018
+    getParam OpenGLProfile = fmap toEnum' $ glfwGetWindowParam 0x00020018
 
-foreign import ccall unsafe glfwGetWindowParam :: Int -> IO Int
+foreign import ccall unsafe glfwGetWindowParam :: CInt -> IO CInt
 
 -- | Callback type for 'windowSizeCallback'.
 type WindowSizeCallback = GL.Size -> IO ()
@@ -925,7 +933,7 @@ type WindowCloseCallback = IO Bool
 -- | Set the function that will be called when the window is closed.
 windowCloseCallback :: GL.SettableStateVar WindowCloseCallback
 windowCloseCallback = GL.makeSettableStateVar (\f -> do
-  ptr <- glfwWrapFunB f
+  ptr <- glfwWrapFunB (liftM fromEnum' f)
   glfwSetCallbackIORef glfwWindowclosefun ptr
   glfwSetWindowCloseCallback ptr)
 
@@ -954,21 +962,24 @@ videoModes :: GL.GettableStateVar [VideoMode]
 videoModes = GL.makeGettableStateVar getter
   where
     getter = withArray (replicate (sizeOfVideoMode * maxCount) 0) $ \arr ->
-      glfwGetVideoModes arr maxCount >>= filterMode arr
+      glfwGetVideoModes arr (fromIntegral maxCount) >>= filterMode arr
     filterMode _ 0 = return []
     filterMode a c = do
       [w, h, r, b, g] <- peekArray 5 a
       let a' = advancePtr a sizeOfVideoMode
       rest <- filterMode a' (pred c)
-      return $ VideoMode w h r b g : rest
+      return $ videoMode w h r b g : rest
 
-foreign import ccall unsafe glfwGetVideoModes :: Ptr Int -> Int -> IO Int
+foreign import ccall unsafe glfwGetVideoModes :: Ptr CInt -> CInt -> IO CInt
 
 sizeOfVideoMode :: Int
 sizeOfVideoMode = 5
 
 maxCount :: Int
 maxCount = 256
+
+videoMode :: CInt -> CInt -> CInt -> CInt -> CInt -> VideoMode
+videoMode w h r b g = VideoMode (fromIntegral w) (fromIntegral h) (fromIntegral r) (fromIntegral b) (fromIntegral g)
 
 -- | Get the 'VideoMode' of current desktop.
 desktopMode :: GL.GettableStateVar VideoMode
@@ -977,9 +988,9 @@ desktopMode = GL.makeGettableStateVar getter
     getter = withArray (replicate sizeOfVideoMode 0) $ \arr -> do
       glfwGetDesktopMode arr
       [w, h, r, b, g] <- peekArray 5 arr
-      return $ VideoMode w h r b g
+      return $ videoMode w h r b g
 
-foreign import ccall unsafe glfwGetDesktopMode :: Ptr Int -> IO ()
+foreign import ccall unsafe glfwGetDesktopMode :: Ptr CInt -> IO ()
 
 -- | Poll events, such as user input and window events. Upon calling this
 --   function, all window states, keyboard states and mouse states are updated.
@@ -1003,9 +1014,9 @@ foreign import ccall safe "glfwWaitEvents" waitEvents :: IO ()
 --   'waitEvents' or 'swapBuffers' (with 'AutoPollEvent' enabled) must be called
 --   before any keyboard events are recorded and reported by 'getKey'.
 getKey :: Enum a => a -> IO KeyButtonState
-getKey = fmap toEnum . glfwGetKey . fromEnum
+getKey = fmap toEnum' . glfwGetKey . fromEnum'
 
-foreign import ccall unsafe glfwGetKey :: Int -> IO Int
+foreign import ccall unsafe glfwGetKey :: CInt -> IO CInt
 
 -- | Return a 'KeyButtonState', either 'Release' or 'Press', of the indicated
 --   mouse button.
@@ -1014,9 +1025,9 @@ foreign import ccall unsafe glfwGetKey :: Int -> IO Int
 --   'waitEvents' or 'swapBuffers' (with 'AutoPollEvent' enabled) must be called
 --   before any mouse events are recorded and reported by 'getMouseButton'.
 getMouseButton :: MouseButton -> IO KeyButtonState
-getMouseButton = fmap toEnum . glfwGetMouseButton . fromEnum
+getMouseButton = fmap toEnum' . glfwGetMouseButton . fromEnum' 
 
-foreign import ccall unsafe glfwGetMouseButton :: Int -> IO Int
+foreign import ccall unsafe glfwGetMouseButton :: CInt -> IO CInt
 
 -- | Set or get the mouse position.
 --
@@ -1039,8 +1050,8 @@ mousePos = GL.makeStateVar getter setter
       return $ GL.Position (fromIntegral mx) (fromIntegral my)))
     setter (GL.Position x y) = glfwSetMousePos (fromIntegral x) (fromIntegral y)
 
-foreign import ccall unsafe glfwGetMousePos :: Ptr Int -> Ptr Int -> IO ()
-foreign import ccall unsafe glfwSetMousePos :: Int -> Int -> IO ()
+foreign import ccall unsafe glfwGetMousePos :: Ptr CInt -> Ptr CInt -> IO ()
+foreign import ccall unsafe glfwSetMousePos :: CInt -> CInt -> IO ()
 
 -- | Set or get the mouse wheel position.
 --
@@ -1048,20 +1059,20 @@ foreign import ccall unsafe glfwSetMousePos :: Int -> Int -> IO ()
 --   'waitEvents' or 'swapBuffers' (with 'AutoPollEvent' enabled) must be called
 --   before any wheel movements are recorded and reported by 'mouseWheel'.
 mouseWheel :: GL.StateVar Int
-mouseWheel = GL.makeStateVar glfwGetMouseWheel glfwSetMouseWheel
+mouseWheel = GL.makeStateVar (liftM fromIntegral glfwGetMouseWheel) (glfwSetMouseWheel . fromIntegral)
 
-foreign import ccall unsafe glfwGetMouseWheel :: IO Int
-foreign import ccall unsafe glfwSetMouseWheel :: Int -> IO ()
+foreign import ccall unsafe glfwGetMouseWheel :: IO CInt
+foreign import ccall unsafe glfwSetMouseWheel :: CInt -> IO ()
 
 -- | Get joystick parameters.
 --
 --   The joystick information is updated every time the getter is queried.
 --
 --   No window has to be opened for joystick information to be available.
-joystickParam :: Joystick -> JoystickParam -> GL.GettableStateVar Int
-joystickParam j param = GL.makeGettableStateVar (glfwGetJoystickParam (fromEnum j) (fromEnum param))
+joystickParam :: Joystick -> JoystickParam -> GL.GettableStateVar CInt
+joystickParam j param = GL.makeGettableStateVar (glfwGetJoystickParam (fromEnum' j) (fromEnum' param))
 
-foreign import ccall unsafe glfwGetJoystickParam :: Int -> Int -> IO Int
+foreign import ccall unsafe glfwGetJoystickParam :: CInt -> CInt -> IO CInt
 
 -- | Get a certain number of axis positions for the given joystick. If the
 --   number of positions requested is is greater than the number available, the
@@ -1073,7 +1084,7 @@ foreign import ccall unsafe glfwGetJoystickParam :: Int -> Int -> IO Int
 joystickPos :: Joystick -> Int -> GL.GettableStateVar [Float]
 joystickPos j n = GL.makeGettableStateVar $
   withArray (replicate n 0) $ \a -> do
-    _ <- glfwGetJoystickPos (fromEnum j) a n
+    _ <- glfwGetJoystickPos (fromEnum' j) a (fromIntegral n)
     peekArray n a
 
 -- | Get joystick positions. The returned list contains the positions
@@ -1084,12 +1095,12 @@ joystickPos j n = GL.makeGettableStateVar $
 --   No window has to be opened for joystick input to be available.
 joystickPos' :: Joystick -> GL.GettableStateVar [Float]
 joystickPos' j = GL.makeGettableStateVar $ do
-  n <- glfwGetJoystickParam (fromEnum j) (fromEnum Axes)
-  allocaArray n $ \a -> do
-    n' <- glfwGetJoystickPos (fromEnum j) a n
-    peekArray n' a
+  n <- glfwGetJoystickParam (fromEnum' j) (fromEnum' Axes)
+  allocaArray (fromIntegral n) $ \a -> do
+    n' <- glfwGetJoystickPos (fromEnum' j) a n
+    peekArray (fromIntegral n') a
 
-foreign import ccall unsafe glfwGetJoystickPos :: Int -> Ptr Float -> Int -> IO Int
+foreign import ccall unsafe glfwGetJoystickPos :: CInt -> Ptr Float -> CInt -> IO CInt
 
 -- | Get joystick button states. The returned list contains the states
 --   for all available buttons for the given joystick.
@@ -1099,13 +1110,13 @@ foreign import ccall unsafe glfwGetJoystickPos :: Int -> Ptr Float -> Int -> IO 
 --   No window has to be opened for joystick input to be available.
 joystickButtons :: Joystick -> GL.GettableStateVar [KeyButtonState]
 joystickButtons j = GL.makeGettableStateVar $ do
-  n <- glfwGetJoystickParam (fromEnum j) (fromEnum Buttons)
-  allocaArray n $ \a -> do
-    n' <- glfwGetJoystickButtons (fromEnum j) a n
-    l  <- peekArray n' a
-    return $ map (toEnum . fromEnum) l
+  n <- glfwGetJoystickParam (fromEnum' j) (fromEnum' Buttons)
+  allocaArray (fromIntegral n) $ \a -> do
+    n' <- glfwGetJoystickButtons (fromEnum' j) a n
+    l  <- peekArray (fromIntegral n') a
+    return $ map (toEnum . fromEnum') l
 
-foreign import ccall unsafe glfwGetJoystickButtons :: Int -> Ptr Int8 -> Int -> IO Int
+foreign import ccall unsafe glfwGetJoystickButtons :: CInt -> Ptr Int8 -> CInt -> IO CInt
 
 -- | Callback type for 'keyCallback'.
 type KeyCallback = Key -> KeyButtonState -> IO ()
@@ -1117,7 +1128,7 @@ keyCallback :: GL.SettableStateVar KeyCallback
 keyCallback = GL.makeSettableStateVar setter
   where
     setter f = do
-      let g k s = f (toEnum k) (toEnum s)
+      let g k s = f (toEnum' k) (toEnum' s)
       ptr <- glfwWrapFun2 g
       glfwSetCallbackIORef glfwKeyfun ptr
       glfwSetKeyCallback ptr
@@ -1135,7 +1146,7 @@ charCallback :: GL.SettableStateVar CharCallback
 charCallback = GL.makeSettableStateVar setter
   where
     setter f = do
-      let g k s = f (toEnum k) (toEnum s)
+      let g k s = f (toEnum' k) (toEnum' s)
       ptr <- glfwWrapFun2 g
       glfwSetCallbackIORef glfwCharfun ptr
       glfwSetCharCallback ptr
@@ -1151,7 +1162,7 @@ mouseButtonCallback :: GL.SettableStateVar MouseButtonCallback
 mouseButtonCallback = GL.makeSettableStateVar setter
   where
     setter f = do
-      let g b s = f (toEnum b) (toEnum s)
+      let g b s = f (toEnum' b) (toEnum' s)
       ptr <- glfwWrapFun2 g
       glfwSetCallbackIORef glfwMousebuttonfun ptr
       glfwSetMouseButtonCallback ptr
@@ -1188,7 +1199,7 @@ mousePosCallback = GL.makeSettableStateVar setter
 foreign import ccall safe glfwSetMousePosCallback :: FunPtr GLFWmouseposfun -> IO ()
 
 -- | Callback type for 'mouseWheelCallback'.
-type MouseWheelCallback = Int -> IO ()
+type MouseWheelCallback = CInt -> IO ()
 
 -- | Set the function that will be called when there is a mouse wheel event,
 --   i.e., every time the mouse wheel is turned.
@@ -1235,9 +1246,9 @@ foreign import ccall unsafe "glfwSleep" sleep :: Double -> IO ()
 
 -- | Return 'True' if the extension is supported, 'False' otherwise.
 extensionSupported :: String -> IO Bool
-extensionSupported = liftM toEnum . flip withCString glfwExtensionSupported
+extensionSupported = liftM toEnum' . flip withCString glfwExtensionSupported
 
-foreign import ccall unsafe glfwExtensionSupported :: CString -> IO Int
+foreign import ccall unsafe glfwExtensionSupported :: CString -> IO CInt
 
 -- | Returns the version numbers for the currently used OpenGL implementation.
 glVersion :: GL.GettableStateVar Version
@@ -1248,7 +1259,7 @@ glVersion = GL.makeGettableStateVar $
     glfwGetGLVersion x y z
     peek3 (x, y, z)
     
-foreign import ccall unsafe glfwGetGLVersion :: Ptr Int -> Ptr Int -> Ptr Int -> IO ()
+foreign import ccall unsafe glfwGetGLVersion :: Ptr CInt -> Ptr CInt -> Ptr CInt -> IO ()
 
 -- TODO:
 -- foreign import ccall unsafe glfwGetProcAddress :: Ptr CChar -> FunPtr ?
@@ -1256,15 +1267,15 @@ foreign import ccall unsafe glfwGetGLVersion :: Ptr Int -> Ptr Int -> Ptr Int ->
 
 -- | Enable a 'SpecialFeature'.
 enableSpecial :: SpecialFeature -> IO ()
-enableSpecial = glfwEnable . fromEnum
+enableSpecial = glfwEnable . fromEnum'
 
-foreign import ccall unsafe glfwEnable :: Int -> IO ()
+foreign import ccall unsafe glfwEnable :: CInt -> IO ()
 
 -- | Disable a 'SpecialFeature'.
 disableSpecial :: SpecialFeature -> IO ()
-disableSpecial = glfwDisable . fromEnum
+disableSpecial = glfwDisable . fromEnum'
 
-foreign import ccall unsafe glfwDisable :: Int -> IO ()
+foreign import ccall unsafe glfwDisable :: CInt -> IO ()
 
 --foreign import ccall unsafe glfwReadImage :: Ptr CChar -> Ptr GLFWimage -> Int -> IO ()
 --foreign import ccall unsafe glfwFreeImage :: Ptr GLFWimage -> IO ()
@@ -1295,22 +1306,22 @@ foreign import ccall unsafe glfwDisable :: Int -> IO ()
 loadTexture2D :: String -> [TextureFlag] -> IO Bool
 loadTexture2D fname flag = do
   r <- withCString fname (`glfwLoadTexture2D` readFlag flag) 
-  return $ toEnum r
+  return $ toEnum' r
 
-foreign import ccall unsafe glfwLoadTexture2D :: CString -> Int -> IO Int
+foreign import ccall unsafe glfwLoadTexture2D :: CString -> CInt -> IO CInt
 
-readFlag :: forall t. (Enum t) => [t] -> Int
-readFlag = foldr ((.|.) . fromEnum) 0
+readFlag :: forall t. (Enum t) => [t] -> CInt
+readFlag = foldr ((.|.) . fromEnum') 0
 
 -- | Read an image from the memory buffer (the given byte string) and
 --   upload the image to OpenGL texture memory. The rest is similar
 --   to 'loadTexture2D'.
 loadMemoryTexture2D :: String -> [TextureFlag] -> IO Bool
 loadMemoryTexture2D arr flag = withCAStringLen arr (\(ptr, len) -> do
-  r <- glfwLoadMemoryTexture2D ptr len (readFlag flag)
-  return $ toEnum r)
+  r <- glfwLoadMemoryTexture2D ptr (fromIntegral len) (readFlag flag)
+  return $ toEnum' r)
 
-foreign import ccall unsafe glfwLoadMemoryTexture2D :: Ptr CChar -> Int -> Int -> IO Int
+foreign import ccall unsafe glfwLoadMemoryTexture2D :: Ptr CChar -> CInt -> CInt -> IO CInt
 
 glfwWindowsizefun    :: IORef (Maybe (FunPtr GLFWwindowsizefun))
 glfwWindowclosefun   :: IORef (Maybe (FunPtr GLFWwindowclosefun))
@@ -1329,9 +1340,9 @@ glfwMousewheelfun    = unsafePerformIO (newIORef Nothing)
 glfwKeyfun           = unsafePerformIO (newIORef Nothing)
 glfwCharfun          = unsafePerformIO (newIORef Nothing)
 
-foreign import ccall unsafe "wrapper" glfwWrapFun2 :: (Int -> Int -> IO ()) -> IO (FunPtr (Int -> Int -> IO ()))
-foreign import ccall unsafe "wrapper" glfwWrapFun1 :: (Int -> IO ()) -> IO (FunPtr (Int -> IO ()))
-foreign import ccall unsafe "wrapper" glfwWrapFunB :: IO Bool -> IO (FunPtr (IO Bool))
+foreign import ccall unsafe "wrapper" glfwWrapFun2 :: (CInt -> CInt -> IO ()) -> IO (FunPtr (CInt -> CInt -> IO ()))
+foreign import ccall unsafe "wrapper" glfwWrapFun1 :: (CInt -> IO ()) -> IO (FunPtr (CInt -> IO ()))
+foreign import ccall unsafe "wrapper" glfwWrapFunB :: IO CInt -> IO (FunPtr (IO CInt))
 foreign import ccall unsafe "wrapper" glfwWrapFun0 :: IO () -> IO (FunPtr (IO ()))
 
 glfwSetCallbackIORef :: forall a. IORef (Maybe (FunPtr a)) -> FunPtr a -> IO ()
@@ -1414,12 +1425,12 @@ renderString name s = do
   GL.preservingMatrix $ mapM_ (renderChar font) s
   GL.texture GL.Texture2D $= GL.Disabled
 
-peek3 :: (Storable t1, Storable t2, Storable t) => (Ptr t, Ptr t1, Ptr t2) -> IO (t, t1, t2)
+peek3 :: (Ptr CInt, Ptr CInt, Ptr CInt) -> IO (Int, Int, Int)
 peek3 (x, y, z) = do
   x' <- peek x
   y' <- peek y
   z' <- peek z
-  return (x', y', z')
+  return (fromIntegral x', fromIntegral y', fromIntegral z')
 
 vector3 :: GLfloat -> GLfloat -> GLfloat -> GL.Vector3 GLfloat
 vector3 = GL.Vector3
