@@ -1199,7 +1199,7 @@ mousePosCallback = GL.makeSettableStateVar setter
 foreign import ccall safe glfwSetMousePosCallback :: FunPtr GLFWmouseposfun -> IO ()
 
 -- | Callback type for 'mouseWheelCallback'.
-type MouseWheelCallback = CInt -> IO ()
+type MouseWheelCallback = Int -> IO ()
 
 -- | Set the function that will be called when there is a mouse wheel event,
 --   i.e., every time the mouse wheel is turned.
@@ -1207,17 +1207,18 @@ mouseWheelCallback :: GL.SettableStateVar MouseWheelCallback
 mouseWheelCallback  = GL.makeSettableStateVar setter
   where
     setter f = do
+      let g x = f =<< do
 #if __GLASGOW_HASKELL__ >= 610
-      ptr <- glfwWrapFun1 f
+                return (fromIntegral x)
 #else
       -- Work around bug in GHC FFI
       -- See http://hackage.haskell.org/trac/ghc/ticket/2594
-      let g x = with 0 \ptr -> do
-                    poke ptr x
-                    x32 <- peek (castPtr ptr) :: IO Int32
-                    f (fromIntegral x32)
-      ptr <- glfwWrapFun1 g
+                with 0 \ptr -> do
+                  poke ptr x
+                  x32 <- peek (castPtr ptr) :: IO Int32
+                  return $ fromIntegral x32
 #endif
+      ptr <- glfwWrapFun1 g
       glfwSetCallbackIORef glfwMousewheelfun ptr
       glfwSetMouseWheelCallback ptr
 
