@@ -1208,12 +1208,12 @@ mouseWheelCallback  = GL.makeSettableStateVar setter
   where
     setter f = do
       let g x = f =<< do
-#if __GLASGOW_HASKELL__ >= 610
+#if 0 
                 return (fromIntegral x)
 #else
       -- Work around bug in GHC FFI
       -- See http://hackage.haskell.org/trac/ghc/ticket/2594
-                with 0 \ptr -> do
+                with 0 $ \ptr -> do
                   poke ptr x
                   x32 <- peek (castPtr ptr) :: IO Int32
                   return $ fromIntegral x32
