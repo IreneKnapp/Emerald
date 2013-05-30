@@ -1,12 +1,7 @@
--- | Haskell Interface to GLFW (<http://www.glfw.org>).
---   Supports GLFW API version 2.7.5.
---
---   GLFW thread functions are not supported by this module; use
---   Haskell thread instead.
+{-# LANGUAGE ExistentialQuantification, ForeignFunctionInterface,
+             TypeFamilies #-}
 
-{-# LANGUAGE CPP, ExistentialQuantification, ForeignFunctionInterface, TypeFamilies #-}
-
-module Graphics.UI.GLFW
+module Graphics.UI.Emerald
   ( -- * Data types
     Version
   , DisplayBits(..)
@@ -1179,18 +1174,7 @@ mousePosCallback = GL.makeSettableStateVar setter
   where
     setter f = do
       let g x y = f =<< do
-#if _GLASGOW_HASKELL__ >= 610
             return $ GL.Position (fromIntegral x) (fromIntegral y)
-#else
-      -- Work around bug in GHC FFI
-      -- See http://hackage.haskell.org/trac/ghc/ticket/2594
-            with 0 $ \ptr -> do
-              poke ptr x
-              x32 <- peek (castPtr ptr) :: IO Int32
-              poke ptr y
-              y32 <- peek (castPtr ptr) :: IO Int32
-              return $ GL.Position (fromIntegral x32) (fromIntegral y32)
-#endif
       ptr <- glfwWrapFun2 g
       glfwSetCallbackIORef glfwMouseposfun ptr
       glfwSetMousePosCallback ptr
@@ -1208,16 +1192,7 @@ mouseWheelCallback  = GL.makeSettableStateVar setter
   where
     setter f = do
       let g x = f =<< do
-#if 0 
                 return (fromIntegral x)
-#else
-      -- Work around bug in GHC FFI
-      -- See http://hackage.haskell.org/trac/ghc/ticket/2594
-                with 0 $ \ptr -> do
-                  poke ptr x
-                  x32 <- peek (castPtr ptr) :: IO Int32
-                  return $ fromIntegral x32
-#endif
       ptr <- glfwWrapFun1 g
       glfwSetCallbackIORef glfwMousewheelfun ptr
       glfwSetMouseWheelCallback ptr

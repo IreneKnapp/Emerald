@@ -1,0 +1,69 @@
+name: Emerald
+version: 1.0
+homepage: http://ireneknapp.com/software/
+maintainer: Irene Knapp <irene.knapp@icloud.com>
+cabal-version: >= 1.10
+build-type: Simple
+category: Graphics
+synopsis: A platform-independent toolkit for OpenGL programs
+description:
+  A platform-independent toolkit for OpenGL programs.
+license: BSD3
+license-file: LICENSE
+extra-source-files:
+  README.md
+  C/Win/platform.h
+  C/Mac/platform.h
+  C/emerald.h
+  C/internal.h
+
+source-repository head
+  type: git
+  location: git@github.com:IreneKnapp/Emerald.git
+
+library
+  hs-source-dirs: Haskell
+  exposed-modules:
+    Graphics.UI.Emerald
+  c-sources:
+    C/enable.c
+    C/fullscreen.c
+    C/glext.c
+    C/image.c
+    C/init.c
+    C/input.c
+    C/joystick.c
+    C/stream.c
+    C/tga.c
+    C/thread.c
+    C/time.c
+    C/window.c
+  if os(darwin)
+    frameworks: Cocoa OpenGL
+    c-sources:
+      C/Mac/enable.m
+      C/Mac/fullscreen.m
+      C/Mac/glext.m
+      C/Mac/init.m
+      C/Mac/joystick.m
+      C/Mac/thread.c
+      C/Mac/time.m
+      C/Mac/window.m
+  if os(mingw32)
+    extra-libraries: opengl32
+    c-sources:
+      C/Win/enable.c
+      C/Win/fullscreen.c
+      C/Win/glext.c
+      C/Win/init.c
+      C/Win/joystick.c
+      C/Win/thread.c
+      C/Win/time.c
+      C/Win/window.c
+  build-depends:
+    base   >= 3   && < 5,
+    OpenGL >= 2.1 && < 3
+  default-language: Haskell2010
+  ghc-options: -Wall
+  cc-options: 
+
