@@ -25,6 +25,7 @@ library
   hs-source-dirs: Haskell
   exposed-modules:
     Graphics.UI.Emerald
+  include-dirs: C/
   c-sources:
     C/enable.c
     C/fullscreen.c
@@ -40,6 +41,7 @@ library
     C/window.c
   if os(darwin)
     frameworks: Cocoa OpenGL
+    include-dirs: C/Mac/
     c-sources:
       C/Mac/enable.m
       C/Mac/fullscreen.m
@@ -51,6 +53,7 @@ library
       C/Mac/window.m
   if os(mingw32)
     extra-libraries: opengl32
+    include-dirs: C/Win/
     c-sources:
       C/Win/enable.c
       C/Win/fullscreen.c
