@@ -43,7 +43,7 @@ typedef void *id;
 
 #include <pthread.h>
 
-#include "../../include/GL/glfw.h"
+#include "emerald.h"
 
 
 #ifndef GL_VERSION_3_0
