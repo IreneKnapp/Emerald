@@ -137,8 +137,6 @@ int _glfwPlatformInit( void )
 
     changeToResourcesDirectory();
 
-    _glfwPlatformGetDesktopMode( &_glfwLibrary.desktopMode );
-
     // Install atexit routine
     atexit( glfw_atexit );
 

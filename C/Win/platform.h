@@ -417,9 +417,6 @@ GLFWGLOBAL struct {
     // Window opening hints
     _GLFWhints      hints;
 
-    // Initial desktop mode
-    GLFWvidmode     desktopMode;
-
 // ========= PLATFORM SPECIFIC PART ======================================
 
   HINSTANCE instance;        // Instance of the application

@@ -170,10 +170,6 @@ int _glfwPlatformTerminate( void );
 void _glfwPlatformEnableSystemKeys( void );
 void _glfwPlatformDisableSystemKeys( void );
 
-// Fullscreen
-int  _glfwPlatformGetVideoModes( GLFWvidmode *list, int maxcount );
-void _glfwPlatformGetDesktopMode( GLFWvidmode *mode );
-
 // OpenGL extensions
 int _glfwPlatformExtensionSupported( const char *extension );
 void * _glfwPlatformGetProcAddress( const char *procname );

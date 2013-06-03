@@ -386,12 +386,6 @@ extern "C" {
  * Typedefs
  *************************************************************************/
 
-/* The video mode structure used by glfwGetVideoModes() */
-typedef struct {
-    int Width, Height;
-    int RedBits, BlueBits, GreenBits;
-} GLFWvidmode;
-
 /* Image/texture information */
 typedef struct {
     int Width, Height;
@@ -446,10 +440,6 @@ GLFWAPI int  GLFWAPIENTRY glfwGetWindowParam( int param );
 GLFWAPI void GLFWAPIENTRY glfwSetWindowSizeCallback( GLFWwindowsizefun cbfun );
 GLFWAPI void GLFWAPIENTRY glfwSetWindowCloseCallback( GLFWwindowclosefun cbfun );
 GLFWAPI void GLFWAPIENTRY glfwSetWindowRefreshCallback( GLFWwindowrefreshfun cbfun );
-
-/* Video mode functions */
-GLFWAPI int  GLFWAPIENTRY glfwGetVideoModes( GLFWvidmode *list, int maxcount );
-GLFWAPI void GLFWAPIENTRY glfwGetDesktopMode( GLFWvidmode *mode );
 
 /* Input handling */
 GLFWAPI void GLFWAPIENTRY glfwPollEvents( void );
